@@ -1,6 +1,3 @@
-
-
-
 # log-likelihood
 log_like_probit <- function(par, Y, cut) {
   mu <- par[1]; ss <- exp(par[2])
@@ -78,8 +75,8 @@ ord_did_run <- function(Ynew, Yold, treat, cut) {
 
 
 
-# 
-# 
+#
+#
 # variance_delta <- function(kappa, mu_point, sd_point, mu_vec, sd_vec) {
 #   VCOV <- diag(c(var(mu_vec), var(sd_vec)))
 #   VCOV[VCOV==0] <- cov(mu_vec, sd_vec)
@@ -88,8 +85,8 @@ ord_did_run <- function(Ynew, Yold, treat, cut) {
 #     sqrt(2) / sqrt(pi) * exp(-zj^2) / sd_point,
 #     exp(-zj^2) * zj / (sqrt(pi) * sd_point)
 #   )
-# 
+#
 #   varj <- as.vector(grad %*% VCOV %*% grad)
 #   return(varj)
-# 
+#
 # }
