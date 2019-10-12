@@ -2,9 +2,9 @@
 % Please edit documentation in R/orddid.R
 \name{ord_did}
 \alias{ord_did}
-\title{Ordinal Difference-in-Differences}
+\title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(Ynew, Yold, treat, cut, n_boot)
+ord_did(Ynew, Yold, treat, cut, n_boot, pre)
 }
 \arguments{
 \item{Ynew}{a vector of outcome for the post-treatment period.}
@@ -16,6 +16,8 @@ ord_did(Ynew, Yold, treat, cut, n_boot)
 \item{cut}{a vector of cutoffs.}
 
 \item{n_boot}{the number of boostrapt iterations for computing uncertainty. Default is 500.}
+
+\item{pre}{a boolean to indicate if data comes from entirely pre-treatment periods.}
 }
 \value{
 A list
