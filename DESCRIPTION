@@ -8,6 +8,8 @@ Authors@R:
            email = "syamauchi@g.harvard.edu",
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Depends:
+    cli,
+    crayon,
     VGAM
 Description: What the package does (one paragraph).
 License: What license it uses

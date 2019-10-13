@@ -4,7 +4,7 @@
 \alias{ord_did_boot}
 \title{Bootstrap function}
 \usage{
-ord_did_boot(Ynew, Yold, treat, cut, n_boot)
+ord_did_boot(Ynew, Yold, treat, cut, n_boot, verbose)
 }
 \description{
 Conduct a block bootstrap at the unit level to compute variances and CIs

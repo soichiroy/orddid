@@ -4,7 +4,7 @@
 \alias{ord_did}
 \title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(Ynew, Yold, treat, cut, n_boot, pre)
+ord_did(Ynew, Yold, treat, cut, n_boot, pre = FALSE, verbose = FALSE)
 }
 \arguments{
 \item{Ynew}{a vector of outcome for the post-treatment period.}
@@ -18,6 +18,8 @@ ord_did(Ynew, Yold, treat, cut, n_boot, pre)
 \item{n_boot}{the number of boostrapt iterations for computing uncertainty. Default is 500.}
 
 \item{pre}{a boolean to indicate if data comes from entirely pre-treatment periods.}
+
+\item{verbose}{If \code{TRUE}, print the current iteration in the bootstrap.}
 }
 \value{
 A list

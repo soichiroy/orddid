@@ -1,4 +1,4 @@
-#' Two-wave Panel from Barney and Schaffner (2018)
+#' Two-wave Panel from Barney and Schaffner (2019)
 #' 
 #' @name gun_twowave
 #' @docType data 
@@ -11,7 +11,7 @@
 "gun_twowave"
 
 
-#' Three-wave Panel from Barney and Schaffner (2018)
+#' Three-wave Panel from Barney and Schaffner (2019)
 #' 
 #' @name gun_threewave
 #' @docType data 

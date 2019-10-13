@@ -109,13 +109,18 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
 #' 
 #' Conduct a block bootstrap at the unit level to compute variances and CIs
 #' @keywords internal
-ord_did_boot <- function(Ynew, Yold, treat, cut, n_boot) {
+ord_did_boot <- function(Ynew, Yold, treat, cut, n_boot, verbose) {
   
   ## create an object to save bootparams 
   boot_save <- list()
   boot_save[[1]] <- boot_save[[2]] <- matrix(NA, nrow = n_boot, ncol = length(cut)+1)
   boot_save[[3]] <- boot_save[[4]] <- rep(NA, n_boot)
   boot_params_save <- list()
+  
+  ## check verbose 
+  if (isTRUE(verbose)) {
+    iter_show <- round(n_boot * 0.1)
+  }
   
   ## assuming panel structure 
   ## this check is minimum 
@@ -149,13 +154,24 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, n_boot) {
       }, error = function(e) {
         NULL
       })
+      
+      ## verbose 
+      if (isTRUE(verbose)) {
+        if ((b %% iter_show) == 0) {
+            cat('\r', b, "out of", n_boot, "bootstrap iterations")
+            flush.console() 
+        }
+      }
+      
     }
     
+    # clear the console 
+    cat("\n")
     # concatenate all params 
     boot_params <- do.call("rbind", boot_params_save)    
   } else {
     stop('length of two outcomes does not match')
   }
   
-  return(list("boot_params" = boot_params, "boot" = boot_save))
+  return(list("boot_params" = boot_params, "boot_save" = boot_save))
 }
