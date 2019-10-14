@@ -3,13 +3,13 @@
 \docType{data}
 \name{gun_twowave}
 \alias{gun_twowave}
-\title{Two-wave Panel from Barney and Schaffner (2018)}
+\title{Two-wave Panel from Barney and Schaffner (2019)}
 \format{An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) with 8512 rows and 6 columns.}
 \usage{
 gun_twowave
 }
 \description{
-Two-wave Panel from Barney and Schaffner (2018)
+Two-wave Panel from Barney and Schaffner (2019)
 }
 \references{
 Barney, David J., and Brian F. Schaffner. 

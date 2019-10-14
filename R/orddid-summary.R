@@ -52,7 +52,7 @@ summarise_ord_did <- function(obj) {
       Var[[j]] <- var(boot_dist)
       
       # compute the effect 
-      Delta[[j]] <- sum(fit$fit$Y1[(j+1):J]) - sum(fit$fit$Y0[(j+1):J])
+      Delta[[j]] <- sum(obj$fit$Y1[(j+1):J]) - sum(obj$fit$Y0[(j+1):J])
     }
   } else {
     cat("Not a supported input!")

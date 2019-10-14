@@ -3,13 +3,13 @@
 \docType{data}
 \name{gun_threewave}
 \alias{gun_threewave}
-\title{Three-wave Panel from Barney and Schaffner (2018)}
+\title{Three-wave Panel from Barney and Schaffner (2019)}
 \format{An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) with 23792 rows and 7 columns.}
 \usage{
 gun_threewave
 }
 \description{
-Three-wave Panel from Barney and Schaffner (2018)
+Three-wave Panel from Barney and Schaffner (2019)
 }
 \references{
 Barney, David J., and Brian F. Schaffner. 
