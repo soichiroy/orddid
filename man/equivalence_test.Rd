@@ -4,16 +4,14 @@
 \alias{equivalence_test}
 \title{Conduct an equivalence test of q1(v) = q0(v)}
 \usage{
-equivalence_test(theta, vcov, alpha, epsilon)
+equivalence_test(object, alpha = 0.05, threshold = NULL)
 }
 \arguments{
-\item{theta}{a list of parameters}
+\item{object}{a fitted object from \code{orddid}.}
 
-\item{vcov}{a variance covariance matrix of theta}
+\item{alpha}{level of a test. Should be between 0 and 1. Default is 0.05.}
 
-\item{alpha}{level of a test. Should be between 0 and 1.}
-
-\item{epsilon}{an equivalance threshold}
+\item{threshold}{an equivalance threshold.}
 }
 \value{
 a list of outputs.

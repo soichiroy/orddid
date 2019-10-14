@@ -13,12 +13,15 @@ summary.orddid <- function(obj) {
     # create a table for output 
     tab <- cbind(del, ses, cis)
     colnames(tab) <- c("Effect", "SE", 
-      "90% Lower", "90% Upper", "95% Lower", "95% Upper")
+                       "90% Lower", "90% Upper", "95% Lower", "95% Upper")
     rownames(tab) <- c(paste("Delta[", 2:(J-1), "-", J,"]", sep = ""),
-                      paste("Delta[", J, "]", sep = ""))
+                       paste("Delta[", J, "]", sep = ""))
+    class(tab)    <- c('summary.orddid', 'summary.orddid.fit')
+  } else if ('orddid.test' %in% class(obj)) {
+    tab           <- summarise_equivalence_test(obj)
+    class(tab)    <- c('summary.orddid', 'summary.orddid.test')
   }
   
-  class(tab) <- 'summary.orddid'
   return(tab)
 }
 
@@ -26,9 +29,20 @@ summary.orddid <- function(obj) {
 #' @importFrom cli cat_rule
 #' @export
 print.summary.orddid <- function(obj) {
-  class(obj) <- NULL
-  cat_rule(left = crayon::bold("Effect Estimates"))
-  print.default(obj, quote = FALSE, right = TRUE, digits = 3)
+  if ("summary.orddid.fit" %in% class(obj)) {
+    class(obj) <- NULL
+    cat_rule(left = crayon::bold("Effect Estimates"))
+    print.default(obj, quote = FALSE, right = TRUE, digits = 3)      
+  } else if ('summary.orddid.test' %in% class(obj)) {
+    class(obj) <- NULL
+    cat_rule(left = crayon::bold("Equivalence Test"))
+    tab <- obj$tab 
+    meg <- obj$message
+    print.default(tab, quote = FALSE, right = TRUE, digits = 3)      
+    cat("\n")
+    print.default(meg, quote = FALSE, right = TRUE, digits = 3)      
+    
+  }
   
   invisible(obj)
 }
@@ -55,8 +69,34 @@ summarise_ord_did <- function(obj) {
       Delta[[j]] <- sum(obj$fit$Y1[(j+1):J]) - sum(obj$fit$Y0[(j+1):J])
     }
   } else {
-    cat("Not a supported input!")
+    stop("Not a supported input!")
   }
   
   return(list("CI" = CIs, "Var" = Var, "Delta" = Delta))
+}
+
+
+#' Summarise function for equivalence_test()
+#' @keywords internal
+summarise_equivalence_test <- function(obj) {
+  if (!("orddid.test" %in% class(obj))) {
+    stop("Not a supported input!")
+  }
+  
+  tab <- c(
+    "Estimate (tmax)" = obj$tmax, 
+    "Lower"           = obj$Lmin,
+    "Upper"           = obj$Umax,
+    "pvalue"          = obj$pvalue
+  )
+  
+  test_message <- paste(
+    "H0 of no-equivalence is", 
+    ifelse(obj$reject, "REJECTED", "NOT REJECTED"),
+    "with threshold", 
+    round(attr(obj, 'threshold'), 3)
+  )
+  
+  
+  return(list(tab = tab, message = test_message))
 }

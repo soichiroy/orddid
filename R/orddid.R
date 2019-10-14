@@ -28,9 +28,14 @@ ord_did <- function(Ynew, Yold, treat, cut, n_boot, pre = FALSE, verbose = FALSE
   ## data summary 
   Yc <- c(Ynew, Yold)
   J  <- length(unique(Yc))
-  attr(return_list, "input") <- list(
-    n_boot = n_boot, pre = pre, cut = cut)
+  n  <- length(treat)
+  n1 <- sum(treat)
+  
+  ## add attributes to the returning object 
+  attr(return_list, "input")    <- list(n_boot = n_boot, pre = pre, cut = cut)
   attr(return_list, "n_choice") <- J 
+  attr(return_list, "n")        <- n 
+  attr(return_list, "n1")       <- n1 
   
   class(return_list) <- c("orddid", "orddid.fit")
   return(return_list)

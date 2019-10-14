@@ -7,8 +7,12 @@
 tv_gradient(v, theta)
 }
 \arguments{
-\item{theta}{a list of parameters}
+\item{theta}{a list of parameters.}
+}
+\value{
+a gradient vector.
 }
 \description{
 Compute gradient of t(v; theta)
 }
+\keyword{internal}

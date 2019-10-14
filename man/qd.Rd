@@ -6,6 +6,10 @@
 \usage{
 qd(u, mu1, mu0, s1, s0)
 }
+\value{
+a scalar of qd(v) evaluated at u.
+}
 \description{
 Compute qd(v)
 }
+\keyword{internal}

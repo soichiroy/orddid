@@ -7,8 +7,12 @@
 tv_max(theta, grid = 0.01)
 }
 \arguments{
-\item{theta}{a list of parameters}
+\item{theta}{a list of parameters.}
+}
+\value{
+a scalar value of max_v |q1(v) - q0(v)|.
 }
 \description{
-Compute max_v | q1(v) - q0(v) |
+Compute max_v | q1(v) - q0(v) | over 0 < v < 1.
 }
+\keyword{internal}

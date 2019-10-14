@@ -9,3 +9,4 @@ zd(v, mu1, mu0, s1, s0)
 \description{
 Compute zd(v)
 }
+\keyword{internal}

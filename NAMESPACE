@@ -2,6 +2,7 @@
 
 S3method(print,summary.orddid)
 S3method(summary,orddid)
+export(calc_threshold)
 export(equivalence_test)
 export(ord_did)
 importFrom(VGAM,erf)
