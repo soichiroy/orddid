@@ -17,9 +17,16 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of orddid is to ...
 
-## Installation
++ Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
+
++ For a detailed description of the method see: 
+
+	Difference-in-Differences for Ordinal Outcome
+
+
+
+## Installation Instructions 
 
 You can install the released version of orddid from [CRAN](https://CRAN.R-project.org) with:
 
@@ -30,30 +37,34 @@ install.packages("orddid")
 And the development version from [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("soichiroy/orddid")
+require("devtools")
+install_github("soichiroy/orddid", dependencies=TRUE)
 ```
 ## Example
 
 This is a basic example which shows you how to solve a common problem:
 
 ```{r example}
-# library(orddid)
-## basic example code
+## load package 
+library(orddid)
+
+## load example data 
+data(gun_twowave)
+
+
+## Estimate causal effects 
+set.seed(1234)
+fit <- ord_did(
+  Ynew = gun_twowave$guns12,
+  Yold = gun_twowave$guns10,
+  treat = gun_twowave$treat_100mi,
+  cut = c(0, 1),
+  n_boot = 500,
+  pre = FALSE,
+  verbose = TRUE
+)
+
+## view summary 
+summary(fit)
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
-
-```{r cars}
-summary(cars)
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub!

@@ -7,9 +7,13 @@
 
 <!-- badges: end -->
 
-The goal of orddid is to …
+  - Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
 
-## Installation
+  - For a detailed description of the method see:
+    
+    Difference-in-Differences for Ordinal Outcome
+
+## Installation Instructions
 
 You can install the released version of orddid from
 [CRAN](https://CRAN.R-project.org) with:
@@ -21,8 +25,8 @@ install.packages("orddid")
 And the development version from [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("soichiroy/orddid")
+require("devtools")
+install_github("soichiroy/orddid", dependencies=TRUE)
 ```
 
 ## Example
@@ -30,30 +34,40 @@ devtools::install_github("soichiroy/orddid")
 This is a basic example which shows you how to solve a common problem:
 
 ``` r
-# library(orddid)
-## basic example code
+## load package 
+library(orddid)
+
+## load example data 
+data(gun_twowave)
+
+
+## Estimate causal effects 
+set.seed(1234)
+fit <- ord_did(
+  Ynew = gun_twowave$guns12,
+  Yold = gun_twowave$guns10,
+  treat = gun_twowave$treat_100mi,
+  cut = c(0, 1),
+  n_boot = 500,
+  pre = FALSE,
+  verbose = TRUE
+)
+#> 
+ 50 out of 500 bootstrap iterations
+ 100 out of 500 bootstrap iterations
+ 150 out of 500 bootstrap iterations
+ 200 out of 500 bootstrap iterations
+ 250 out of 500 bootstrap iterations
+ 300 out of 500 bootstrap iterations
+ 350 out of 500 bootstrap iterations
+ 400 out of 500 bootstrap iterations
+ 450 out of 500 bootstrap iterations
+ 500 out of 500 bootstrap iterations
+
+## view summary 
+summary(fit)
+#> ── Effect Estimates ────────────────────────────────────
+#>              Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
+#> Delta[2-3] -0.01385 0.00724  -0.02619  -0.00153   -0.0285  -0.00039
+#> Delta[3]    0.00693 0.00889  -0.00816   0.02076   -0.0114   0.02481
 ```
-
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
-
-``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
-```
-
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date.
-
-You can also embed plots, for example:
-
-<img src="man/figures/README-pressure-1.png" width="100%" />
-
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub\!
