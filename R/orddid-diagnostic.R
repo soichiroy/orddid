@@ -174,10 +174,10 @@ tv_gradient <- function(v, theta) {
   ## compute intermediate quantities 
   z0 <- zd(v, mu1 = theta$mu01, mu0 = theta$mu00, s1 = theta$sd01, s0 = theta$sd00)
   z1 <- zd(v, mu1 = theta$mu11, mu0 = theta$mu10, s1 = theta$sd11, s0 = theta$sd10)
-  exp_z0 <- exp(-z0^2)
-  exp_z1 <- exp(-z1^2)
-  erf_1  <- erf(2 * v - 1, inverse = TRUE)
-  sqrt_pi <- sqrt(pi)
+  exp_z0   <- exp(-z0^2)
+  exp_z1   <- exp(-z1^2)
+  erf_1    <- erf(2 * v - 1, inverse = TRUE)
+  sqrt_pi  <- sqrt(pi)
   sqrt_2pi <- sqrt(2 * pi)
   
   ## compute the gradient 
