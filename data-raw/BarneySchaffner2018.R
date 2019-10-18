@@ -23,6 +23,8 @@ require(readr)
 ## ------------------------------------------------------------------------- ##
 ##                  create two wave data: "gun_twowave"                      ## 
 ## ------------------------------------------------------------------------- ##
+## 
+# path <- /Users/sou/Google Drive/research/jmp/applications/barney2018bjps/dataverse_files
 
 ## load data
 dat <- read_dta("CCES_10_12_14_panel_2year_subset.dta")
@@ -30,11 +32,11 @@ dat <- read_dta("CCES_10_12_14_panel_2year_subset.dta")
 ## subset variables 
 dat %>%
   filter(sameres == 1) %>% ## only no-movers 
-  select(guns12, guns10, treat_100mi, treat10_12_2, partyid3_10, pds_100mi) %>%
+  select(guns12, guns10, treat_100mi, treat10_12_2, partyid3_10, pds_100mi, zip) %>%
   na.omit() -> gun_twowave
 
 ## save object
-usethis::use_data(gun_twowave)
+usethis::use_data(gun_twowave, overwrite = TRUE)
 
 
 ## ------------------------------------------------------------------------- ##
@@ -58,8 +60,8 @@ dat2 <- read_csv("final_longform_10_14_merged.csv")
 ## subset variables 
 dat2 %>% 
   filter(no_move_allwaves==1) %>%
-  select(caseid, year, guns, t_100mi, t_25mi, pds_100mi, pds_25mi) %>%
+  select(caseid, year, guns, t_100mi, t_25mi, pds_100mi, pds_25mi, reszip) %>%
   na.omit() -> gun_threewave
 
 ## save object
-usethis::use_data(gun_threewave)
+usethis::use_data(gun_threewave, overwrite = TRUE)

@@ -4,7 +4,8 @@
 \alias{ord_did}
 \title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(Ynew, Yold, treat, cut, n_boot, pre = FALSE, verbose = FALSE)
+ord_did(Ynew, Yold, treat, id_cluster = NULL, cut, n_boot, pre = FALSE,
+  verbose = FALSE)
 }
 \arguments{
 \item{Ynew}{a vector of outcome for the post-treatment period.}
@@ -12,6 +13,9 @@ ord_did(Ynew, Yold, treat, cut, n_boot, pre = FALSE, verbose = FALSE)
 \item{Yold}{a vector of outcome for the pre-treatment period.}
 
 \item{treat}{a vector of treatment indicator.}
+
+\item{id_cluster}{a vector of cluster id. 
+If left \code{NULL}, bootstrap is blocked at the individaul level}
 
 \item{cut}{a vector of cutoffs.}
 

@@ -109,8 +109,8 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
 #' 
 #' Conduct a block bootstrap at the unit level to compute variances and CIs
 #' @keywords internal
-ord_did_boot <- function(Ynew, Yold, treat, cut, n_boot, verbose) {
-  
+ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
+
   ## create an object to save bootparams 
   boot_save <- list()
   boot_save[[1]] <- boot_save[[2]] <- matrix(NA, nrow = n_boot, ncol = length(cut)+1)
@@ -122,6 +122,11 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, n_boot, verbose) {
     iter_show <- round(n_boot * 0.1)
   }
   
+  ## convert id_cluster to numeric 
+  if (!is.null(id_cluster)) {
+    id_cluster <- as.numeric(as.factor(id_cluster))
+  } 
+    
   ## assuming panel structure 
   ## this check is minimum 
   if (length(Ynew) == length(Yold)) {
@@ -130,17 +135,20 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, n_boot, verbose) {
     
     # reject the bootstrap replica when optimization fails 
     # typically rejection happens when outcome is not 
+    dat_tmp <- cbind(Ynew, Yold, treat)
+    
     while(b <= n_boot) {
-      tryCatch({
-        dat_tmp <- cbind(Ynew, Yold, treat)
-        
+      tryCatch({    
         # sample bootstrap index 
-        idx_use <- sample(1:nrow(dat_tmp), size = nrow(dat_tmp), replace = TRUE)
+        dat_boot <- block_sample(dat_tmp, id_cluster)
         
         # fit the model 
-        fit_tmp <- ord_did_run(Ynew = dat_tmp[idx_use,1],
-          Yold = dat_tmp[idx_use,2], treat = dat_tmp[idx_use, 3],
-          cut = cut)
+        fit_tmp <- ord_did_run(
+          Ynew  = dat_boot[, 1],
+          Yold  = dat_boot[ ,2], 
+          treat = dat_boot[, 3],
+          cut   = cut
+        )
         
         # save   
         boot_save[[1]][b,]    <- fit_tmp$Y1  # Yobs
@@ -174,4 +182,34 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, n_boot, verbose) {
   }
   
   return(list("boot_params" = boot_params, "boot_save" = boot_save))
+}
+
+
+
+#' Block re-sampling for block bootstrap 
+#'
+#' @param dat a data frame with \code{Ynew}, \code{Yold} and \code{treat}.
+#' @param id_cluster a cluster id vector of length n.
+#' @return a list of resampled data.
+#' @keywords internal
+block_sample <- function(dat, id_cluster) {
+  if (is.null(id_cluster)) {
+    idx_use  <- sample(1:nrow(dat), size = nrow(dat), replace = TRUE)
+    dat_boot <- dat[idx_use, ]
+  } else {
+    id_unique <- unique(id_cluster)   # unique cluster id 
+    J         <- length(id_unique)    # number of clusters 
+    
+    # sample cluster id & data 
+    id_cluster_boot <- sample(id_unique, size = J, replace = TRUE)
+    # dat_list        <- lapply(1:length(id_cluster_boot), function(j) {
+    #     dat[id_cluster == id_cluster_boot[j], ]
+    #   })  
+    # dat_boot        <- do.call("rbind", dat_list)    
+    dat_boot <- dat_block_boot(dat = dat, id_cluster = id_cluster,
+      id_cluster_boot = id_cluster_boot, max_cluster_size = max(table(id_cluster))
+    )
+  }
+  
+  return(dat_boot)
 }

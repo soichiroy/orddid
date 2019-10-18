@@ -1,6 +1,6 @@
 Package: orddid
 Title: Difference-in-Differences Design for Ordinal Outcome
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: 
     person(given = "Soichiro",
            family = "Yamauchi",
@@ -10,7 +10,12 @@ Authors@R:
 Imports:
     cli,
     crayon,
-    VGAM
+    VGAM,
+    Rcpp,
+    RcppArmadillo
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo
 Description: A R package for implementing difference-in-differences design for the ordinal outcome.
 License: GPL-2
 Encoding: UTF-8
