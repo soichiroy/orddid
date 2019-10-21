@@ -59,11 +59,10 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
   ## fit four probit
   ## Y[d = 0, t = 0]
   fit00 <- fit_ord_probit( Y = Yold[treat == 0], cut = cut )
-  ## Y[d = 1, t = 0]
-  fit01 <- fit_ord_probit( Y = Yold[treat == 1], cut = cut )
   ## Y[d = 0, t = 1]
-  fit10 <- fit_ord_probit( Y = Ynew[treat == 0], cut = cut )
-
+  fit01 <- fit_ord_probit( Y = Ynew[treat == 0], cut = cut )
+  ## Y[d = 1, t = 0]
+  fit10 <- fit_ord_probit( Y = Yold[treat == 1], cut = cut )
   # observed Y[t=1,d=1]
   fit_tr <- fit_ord_probit( Y = Ynew[treat == 1], cut = cut )
 
