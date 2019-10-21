@@ -74,7 +74,7 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
   } else {
     ## use the identification formula to recover counter-factual parameters 
     mu11 <- fit10$mu + (fit01$mu - fit00$mu) *
-            (fit01$sd / fit00$sd)
+            (fit10$sd / fit00$sd)
     ss11 <- fit10$sd * fit01$sd / fit00$sd
   }
 
