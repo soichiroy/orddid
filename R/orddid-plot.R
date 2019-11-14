@@ -1,7 +1,7 @@
 # Plot Equivalence Test
 #'
 #' @export
-plot.orddid.test <- function(obj, ylim, ...) {
+plot.orddid.test <- function(obj, ylim, fill = TRUE, ...) {
   ## extract infor
   v_range <- c(0, obj$v_range, 1)
   tv      <- c(0, obj$tv, 0)
@@ -17,14 +17,21 @@ plot.orddid.test <- function(obj, ylim, ...) {
         ylab = expression(hat(t)~"(v) ="~tilde(q)[1]~"(v)"~-~tilde(q)[0]~"(v)"),
         main = "Test Statistic \n (Pre-Treatment Outcome)",
         ylim = ylim, lwd = 1.5)
-  lines(v_range, Uv, lty = 2, lwd = 1.3, col = 'gray40')
-  lines(v_range, Lv, lty = 2, lwd = 1.3, col = 'gray40')
+  if (isTRUE(fill)) {
+    # fill the area covered by the CI
+    polygon(c(v_range, rev(v_range)), c(Uv, rev(Lv)), col = '#d3d4d2',
+            border = NA)
+    lines(v_range, tv, col = 'black', lwd = 1.5)
+  }
+  lines(v_range, Uv, lty = 2, lwd = 1.4, col = 'gray30')
+  lines(v_range, Lv, lty = 2, lwd = 1.4, col = 'gray30')
+
   abline(h = c(-ethres, ethres), col = 'red')
-  abline(h = c(-ULmax, ULmax), col = '#33A6B8')
+  abline(h = c(-ULmax, ULmax), col = '#1E88A8')
   text(0.4, ethres, paste("equivalence threshold =", round(ethres, 3)),
         col = 'red', pos = 3, cex = 0.8)
   text(0.4, -ULmax, paste("minimum threshold =", round(ULmax, 3)),
-        col = '#33A6B8', pos = 1, cex = 0.8)
+        col = '#1E88A8', pos = 1, cex = 0.8)
   legend("topleft", legend = bquote(widehat(t)["max"]~"="~.(tmax)),
          cex = 0.9, bty = 'n')
 }
