@@ -34,7 +34,7 @@ install_github("soichiroy/orddid", dependencies=TRUE)
 This is a basic example which shows you how to solve a common problem:
 
 ``` r
-## load package 
+## load package
 library(orddid)
 library(dplyr)
 #> 
@@ -46,11 +46,11 @@ library(dplyr)
 #> 
 #>     intersect, setdiff, setequal, union
 
-## load example data 
+## load example data
 data("gun_twowave")
 
 
-## Estimate causal effects 
+## Estimate causal effects
 set.seed(1234)
 fit <- ord_did(
   Ynew = gun_twowave$guns12,
@@ -62,28 +62,28 @@ fit <- ord_did(
   verbose = FALSE
 )
 
-## view summary 
+## view summary
 summary(fit)
-#> ── Effect Estimates ────────────────────────────────────
+#> ── Effect Estimates ─────────────────────────────
 #>              Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
-#> Delta[2-3] -0.01385 0.00724  -0.02619  -0.00153   -0.0285  -0.00039
-#> Delta[3]    0.00693 0.00889  -0.00816   0.02076   -0.0114   0.02481
+#> Delta[2-3] -0.01385 0.00666  -0.02426  -0.00317  -0.02607  -0.00061
+#> Delta[3]    0.00693 0.00822  -0.00572   0.02050  -0.00796   0.02285
 ```
 
 ## Example: Additional Pre-treatment Period is Available
 
 ``` r
-## load data 
+## load data
 data("gun_threewave")
 
 ## further subset to no-treated people through 2012
-case_use <- gun_threewave %>% 
+case_use <- gun_threewave %>%
   filter(year == 2012) %>%
   filter(pds_100mi == "Untreated in Previous Decade" & t_100mi == 0) %>%
   pull(caseid)
 dat_14   <- gun_threewave %>% filter(caseid %in% case_use)
 
-## check if subsetting is success full 
+## check if subsetting is success full
 ## there should be no one treated until 2014
 dat_14 %>% group_by(year, t_100mi) %>% summarize(n = n())
 #> # A tibble: 4 x 3
@@ -103,41 +103,48 @@ case10    <- dat_14 %>% filter(year == 2010) %>% pull(caseid)
 case_full <- intersect(intersect(case14, case12), case10)
 
 ## treat Y2012 as "post" and Y2010 as "pre"
-Ynew  <- dat_14 %>% filter(caseid %in% case_full & year == 2012) %>% 
+Ynew  <- dat_14 %>% filter(caseid %in% case_full & year == 2012) %>%
           pull(guns)
-Yold  <- dat_14 %>% filter(caseid %in% case_full & year == 2010) %>% 
+Yold  <- dat_14 %>% filter(caseid %in% case_full & year == 2010) %>%
           pull(guns)
 treat <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
           pull(t_100mi)
 
-## estimate parameters 
-fit <- ord_did(Ynew, Yold, treat, cut = c(0, 1), 
+## estimate parameters
+fit <- ord_did(Ynew, Yold, treat, cut = c(0, 1),
                n_boot = 2000, pre = TRUE, verbose = FALSE)
 
-## equivalence test 
+## equivalence test
 equiv_test <- equivalence_test(
   object = fit, alpha = 0.05
 )
 
-## view result 
+## view result
 summary(equiv_test)
-#> ── Equivalence Test ────────────────────────────────────
+#> ── Equivalence Test ─────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>          0.0154         -0.0210          0.0129          0.0000 
+#>          0.0220         -0.0753          0.0517          0.1594 
 #> 
-#> [1] H0 of no-equivalence is REJECTED with threshold 0.054
+#> [1] H0 of no-equivalence is NOT REJECTED with threshold 0.054
 
+## plot result
+plot(equiv_test, ylim = c(-0.1, 0.1))
+```
 
-## test with different threshold 
+<img src="man/figures/README-example2-1.png" width="100%" />
+
+``` r
+
+## test with different threshold
 equiv_test2 <- equivalence_test(
   object = fit, alpha = 0.05, threshold = 0.01
 )
 
-## view result 
+## view result
 summary(equiv_test2)
-#> ── Equivalence Test ────────────────────────────────────
+#> ── Equivalence Test ─────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>          0.0154         -0.0210          0.0129          0.9550 
+#>          0.0220         -0.0753          0.0517          0.6457 
 #> 
 #> [1] H0 of no-equivalence is NOT REJECTED with threshold 0.01
 ```
