@@ -13,7 +13,7 @@ plot.orddid.test <- function(obj, ylim, fill = TRUE, ...) {
 
   ## plot
   plot(v_range, tv, type = 'l',
-        xlab = "v",
+        xlab = "Quantile (v)",
         ylab = expression(hat(t)~"(v) ="~tilde(q)[1]~"(v)"~-~tilde(q)[0]~"(v)"),
         main = "Test Statistic \n (Pre-Treatment Outcome)",
         ylim = ylim, lwd = 1.5)

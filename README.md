@@ -123,15 +123,15 @@ equiv_test <- equivalence_test(
 summary(equiv_test)
 #> ── Equivalence Test ─────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>          0.0220         -0.0753          0.0517          0.1594 
+#>         0.02199        -0.03986         0.02155         0.00151 
 #> 
-#> [1] H0 of no-equivalence is NOT REJECTED with threshold 0.054
+#> [1] H0 of no-equivalence is REJECTED with threshold 0.054
 
 ## plot result
-plot(equiv_test, ylim = c(-0.1, 0.1))
+plot(equiv_test, ylim = c(-0.1, 0.1), fill = FALSE)
 ```
 
-<img src="man/figures/README-example2-1.png" width="100%" />
+![](man/figures/README-example2-1.png)<!-- -->
 
 ``` r
 
@@ -144,7 +144,7 @@ equiv_test2 <- equivalence_test(
 summary(equiv_test2)
 #> ── Equivalence Test ─────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>          0.0220         -0.0753          0.0517          0.6457 
+#>          0.0220         -0.0399          0.0215          0.8677 
 #> 
 #> [1] H0 of no-equivalence is NOT REJECTED with threshold 0.01
 ```
