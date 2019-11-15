@@ -23,6 +23,7 @@
 #' @param alpha level of a test. Should be between 0 and 1. Default is 0.05.
 #' @param threshold an equivalance threshold.
 #' @return a list of outputs.
+#' @importFrom Matrix bdiag
 #' @export
 equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
   ## check input
@@ -38,7 +39,11 @@ equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
   ## extract information
   theta <- object$fit$theta
   nobs  <- attr(object, 'n') * 2
-  vcov  <- diag(diag(cov(object$boot_params)))
+  vcov  <- cov(object$boot_params)
+
+  ## zero out under independent unit assumption
+  v0 <- vcov[1:4, 1:4]; v1 <- vcov[5:8, 5:8]
+  vcov <- as.matrix(bdiag(list(v0, v1)))
 
 
   ## compute t(v)
