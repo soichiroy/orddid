@@ -41,11 +41,14 @@ usethis::use_data(gun_twowave_sub, overwrite = TRUE)
 
 
 ## ------------------------------------------------------------------------- ##
-##                  create two wave data: "gun_twowave_full"                  ##
+##                  create two wave data: "gun_twowave_full"                 ##
 ## ------------------------------------------------------------------------- ##
+## there are some observations whos `regzip_post` differ across waves,
+## even though `no_move == 1`
+##
+
 ## load data
 dat1 <- read_dta("data-raw/final_longform_10_12_merged.dta")
-
 
 dat1 %>% filter(year == 2010) %>%
   pull(CC320) %>%
@@ -64,18 +67,28 @@ table(
 
 dat1 %>%
   filter(no_move == 1) %>%
-  mutate(rezip = regzip_post) %>%
-  select(caseid, year, CC320, pds_100mi, pds_25mi) %>%
+  pivot_wider(id_cols = caseid,
+    names_from = year, names_prefix = "zip",
+    values_from = regzip_post
+  ) -> zip_wide
+
+zip_wide %>%
+  filter(zip2010 != zip2012) %>%
+  pull(caseid) -> remove_id
+
+
+dat1 %>%
+  filter(no_move == 1) %>%
+  filter(!caseid %in% remove_id) %>%
+  select(caseid, year, CC320, pds_100mi, pds_25mi, treat_100mi, treat_25mi, regzip_post) %>%
   pivot_wider(
-    id_cols = c(caseid, pds_100mi, pds_25mi),
+    id_cols = c(caseid, pds_100mi, pds_25mi, treat_100mi, treat_25mi, regzip_post),
     names_from = year, names_prefix = "guns",
-    values_from = CC320) -> gun_twowave_full
+    values_from = CC320) %>%
+  rename(reszip = regzip_post) -> gun_twowave_full
 
-  summary(gun_twowave_full)
+usethis::use_data(gun_twowave_full, overwrite = TRUE)
 
-
-    , treat_25mi, treat_100mi, pds_100mi, pds_25mi,
-      regzip_post) %>%
 
 ## ------------------------------------------------------------------------- ##
 ##                create three wave data: "gun_threewave"                    ##
