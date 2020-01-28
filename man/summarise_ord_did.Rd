@@ -4,7 +4,7 @@
 \alias{summarise_ord_did}
 \title{Summarise function for ord_did()}
 \usage{
-summarise_ord_did(obj)
+summarise_ord_did(obj, cumulative)
 }
 \description{
 Summarise function for ord_did()

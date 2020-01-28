@@ -20,6 +20,7 @@ require(ggplot2)
 require(haven)
 require(readr)
 require(tidyr)
+require(labelled)
 
 ## ------------------------------------------------------------------------- ##
 ##                  create two wave data: "gun_twowave_sub"                  ##
@@ -33,7 +34,7 @@ dat <- read_dta("data-raw/CCES_10_12_14_panel_2year_subset.dta")
 ## subset variables
 dat %>%
   filter(sameres == 1) %>% ## only no-movers
-  select(guns12, guns10, treat_100mi, treat10_12_2, partyid3_10, pds_100mi, zip) %>%
+  select(guns12, guns10, treat_25mi, treat10_12_2, partyid3_10, pds_100mi, zip) %>%
   na.omit() -> gun_twowave_sub
 
 ## save object
@@ -50,42 +51,55 @@ usethis::use_data(gun_twowave_sub, overwrite = TRUE)
 ## load data
 dat1 <- read_dta("data-raw/final_longform_10_12_merged.dta")
 
-dat1 %>% filter(year == 2010) %>%
-  pull(CC320) %>%
-  summary(.)
-dat1 %>% filter(year == 2012) %>%
-  pull(CC320) %>%
-  summary(.)
-
-table(
-  dat1 %>% filter(year == 2010) %>%
-    pull(CC320),
-  dat1 %>% filter(year == 2012) %>%
-    pull(CC320)
-)
-
-
+## some zip changes even after taking `no_move == 1`
+## keep only ones no changes in zip
 dat1 %>%
   filter(no_move == 1) %>%
   pivot_wider(id_cols = caseid,
     names_from = year, names_prefix = "zip",
     values_from = regzip_post
-  ) -> zip_wide
-
-zip_wide %>%
+  ) %>%
   filter(zip2010 != zip2012) %>%
   pull(caseid) -> remove_id
 
+## create a group (treatment / control)
+dat1 %>%
+  filter(no_move == 1) %>%
+  pivot_wider(id_cols = caseid,
+    names_from = year, names_prefix = "treat",
+    values_from = treat_100mi
+  ) %>%
+  mutate(treat_100mi = pmax(treat2010, treat2012)) %>%
+  select(caseid, treat_100mi) -> treat_100mi
 
 dat1 %>%
   filter(no_move == 1) %>%
+  pivot_wider(id_cols = caseid,
+    names_from = year, names_prefix = "treat",
+    values_from = treat_25mi
+  ) %>%
+  mutate(treat_25mi = pmax(treat2010, treat2012)) %>%
+  select(caseid, treat_25mi) -> treat_25mi
+
+## final data
+gun_twowave_full <- dat1 %>%
+  filter(no_move == 1) %>%
   filter(!caseid %in% remove_id) %>%
-  select(caseid, year, CC320, pds_100mi, pds_25mi, treat_100mi, treat_25mi, regzip_post) %>%
+  mutate(guns = ifelse(CC320 == 2, 1, ifelse(CC320 == 3, 2, 3))) %>%
+  select(caseid, year, guns, pds_100mi, pds_25mi, regzip_post, party2010) %>%
   pivot_wider(
-    id_cols = c(caseid, pds_100mi, pds_25mi, treat_100mi, treat_25mi, regzip_post),
+    id_cols = c(caseid, pds_100mi, pds_25mi, regzip_post, party2010),
     names_from = year, names_prefix = "guns",
-    values_from = CC320) %>%
-  rename(reszip = regzip_post) -> gun_twowave_full
+    values_from = guns) %>%
+  rename(reszip = regzip_post) %>%
+  left_join(treat_100mi, by = "caseid") %>%
+  left_join(treat_25mi, by = "caseid") %>%
+  add_value_labels(
+    treat_100mi = c(Untreated = 0, Treated = 1),
+    treat_25mi = c(Untreated = 0, Treated = 1),
+    guns2010 = c("Less Strict" = 1, "Kept As They Are" = 2, "More Strict" = 3),
+    guns2012 = c("Less Strict" = 1, "Kept As They Are" = 2, "More Strict" = 3)
+  ) %>% na.omit()
 
 usethis::use_data(gun_twowave_full, overwrite = TRUE)
 

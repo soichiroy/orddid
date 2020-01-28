@@ -4,7 +4,13 @@
 \alias{summary.orddid}
 \title{Summary function}
 \usage{
-\method{summary}{orddid}(obj)
+\method{summary}{orddid}(obj, cumulative = TRUE)
+}
+\arguments{
+\item{obj}{an output object from \code{\link{orddid}} or \code{\link{equivalence_test}}.}
+
+\item{cumulative}{Default is \code{TRUE}. Only effective for displaying the causal effects.
+If \code{TRUE}, cumulative effect is presented.}
 }
 \description{
 Summary function
