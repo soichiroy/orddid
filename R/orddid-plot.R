@@ -16,7 +16,7 @@ plot.orddid.test <- function(obj, ylim, fill = TRUE, ...) {
         xlab = "Quantile (v)",
         ylab = expression(hat(t)~"(v) ="~tilde(q)[1]~"(v)"~-~tilde(q)[0]~"(v)"),
         main = "Test Statistic \n (Pre-Treatment Outcome)",
-        ylim = ylim, lwd = 1.5)
+        ylim = ylim, lwd = 1.5, ...)
   if (isTRUE(fill)) {
     # fill the area covered by the CI
     polygon(c(v_range, rev(v_range)), c(Uv, rev(Lv)), col = '#d3d4d2',

@@ -4,7 +4,7 @@
 \name{gun_threewave}
 \alias{gun_threewave}
 \title{Three-wave Panel from Barney and Schaffner (2019)}
-\format{An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) with 23792 rows and 8 columns.}
+\format{An object of class \code{spec_tbl_df} (inherits from \code{tbl_df}, \code{tbl}, \code{data.frame}) with 23832 rows and 11 columns.}
 \usage{
 gun_threewave
 }
