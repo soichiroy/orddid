@@ -27,13 +27,7 @@ knitr::opts_chunk$set(
 
 ## Installation Instructions
 
-You can install the released version of orddid from [CRAN](https://CRAN.R-project.org) with:
-
-``` r
-install.packages("orddid")
-```
-
-And the development version from [GitHub](https://github.com/) with:
+You can install the development version from [GitHub](https://github.com/) with:
 
 ``` r
 require("devtools")
@@ -51,13 +45,12 @@ library(dplyr)
 ## load example data
 data("gun_twowave")
 
-
 ## Estimate causal effects
 set.seed(1234)
 fit <- ord_did(
-  Ynew = gun_twowave$guns12,
-  Yold = gun_twowave$guns10,
-  treat = gun_twowave$treat_100mi,
+  Ynew = gun_twowave %>% filter(year == 2012) %>% pull(guns),
+  Yold = gun_twowave %>% filter(year == 2010) %>% pull(guns),
+  treat = gun_twowave %>% filter(year == 2012) %>% pull(treat_100mi),
   cut = c(0, 1),
   n_boot = 500,
   pre = FALSE,
@@ -66,6 +59,9 @@ fit <- ord_did(
 
 ## view summary
 summary(fit)
+
+## non-cumulative effect
+summary(fit, cumulative = FALSE)
 ```
 
 
@@ -75,6 +71,7 @@ summary(fit)
 ```{r example2, fig.height=5.5, fig.width=5.5}
 ## load data
 data("gun_threewave")
+gun_threewave <- na.omit(gun_threewave)
 
 ## further subset to no-treated people through 2012
 case_use <- gun_threewave %>%
@@ -104,7 +101,7 @@ treat <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
 
 ## estimate parameters
 fit <- ord_did(Ynew, Yold, treat, cut = c(0, 1),
-               n_boot = 2000, pre = TRUE, verbose = FALSE)
+               n_boot = 500, pre = TRUE, verbose = FALSE)
 
 ## equivalence test
 equiv_test <- equivalence_test(
@@ -124,6 +121,4 @@ equiv_test2 <- equivalence_test(
 
 ## view result
 summary(equiv_test2)
-
-
 ```
