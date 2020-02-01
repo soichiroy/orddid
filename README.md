@@ -49,8 +49,9 @@ fit <- ord_did(
   Ynew = gun_twowave %>% filter(year == 2012) %>% pull(guns),
   Yold = gun_twowave %>% filter(year == 2010) %>% pull(guns),
   treat = gun_twowave %>% filter(year == 2012) %>% pull(treat_100mi),
+  id_cluster = gun_twowave %>% filter(year == 2010) %>% pull(reszip),
   cut = c(0, 1),
-  n_boot = 500,
+  n_boot = 100,
   pre = FALSE,
   verbose = FALSE
 )
@@ -59,16 +60,16 @@ fit <- ord_did(
 summary(fit)
 #> ── Effect Estimates ─────────────────────────────────────────────────────────────────────────
 #>              Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
-#> Delta[2-3] -0.00562 0.00559   -0.0143   0.00294  -0.01624   0.00525
-#> Delta[3]    0.00431 0.00612   -0.0062   0.01353  -0.00816   0.01485
+#> Delta[2-3] -0.00562 0.00485  -0.01314   0.00253  -0.01426    0.0035
+#> Delta[3]    0.00431 0.00610  -0.00589   0.01302  -0.00679    0.0146
 
 ## non-cumulative effect
 summary(fit, cumulative = FALSE)
 #> ── Effect Estimates ─────────────────────────────────────────────────────────────────────────
 #>            Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
-#> Delta[1]  0.00562 0.00559  -0.00294   0.01428  -0.00525    0.0162
-#> Delta[2] -0.00993 0.00767  -0.02150   0.00293  -0.02460    0.0051
-#> Delta[3]  0.00431 0.00612  -0.00620   0.01353  -0.00816    0.0148
+#> Delta[1]  0.00562 0.00485  -0.00253   0.01314  -0.00350   0.01426
+#> Delta[2] -0.00993 0.00775  -0.02247   0.00277  -0.02401   0.00422
+#> Delta[3]  0.00431 0.00610  -0.00589   0.01302  -0.00679   0.01461
 ```
 
 ## Example: Additional Pre-treatment Period is Available
@@ -111,10 +112,12 @@ Yold  <- dat_14 %>% filter(caseid %in% case_full & year == 2010) %>%
           pull(guns)
 treat <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
           pull(t_100mi)
+zip   <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
+          pull(reszip)
 
 ## estimate parameters
-fit <- ord_did(Ynew, Yold, treat, cut = c(0, 1),
-               n_boot = 500, pre = TRUE, verbose = FALSE)
+fit <- ord_did(Ynew, Yold, treat, zip, cut = c(0, 1),
+               n_boot = 100, pre = TRUE, verbose = FALSE)
 
 ## equivalence test
 equiv_test <- equivalence_test(
@@ -125,7 +128,7 @@ equiv_test <- equivalence_test(
 summary(equiv_test)
 #> ── Equivalence Test ─────────────────────────────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>        0.020332       -0.038339        0.023119        0.000946 
+#>        0.020332       -0.036161        0.021210        0.000204 
 #> 
 #> [1] H0 of no-equivalence is REJECTED with threshold 0.054
 
@@ -146,7 +149,7 @@ equiv_test2 <- equivalence_test(
 summary(equiv_test2)
 #> ── Equivalence Test ─────────────────────────────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>          0.0203         -0.0383          0.0231          0.8280 
+#>          0.0203         -0.0362          0.0212          0.8589 
 #> 
 #> [1] H0 of no-equivalence is NOT REJECTED with threshold 0.01
 ```

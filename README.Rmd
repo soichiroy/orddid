@@ -51,8 +51,9 @@ fit <- ord_did(
   Ynew = gun_twowave %>% filter(year == 2012) %>% pull(guns),
   Yold = gun_twowave %>% filter(year == 2010) %>% pull(guns),
   treat = gun_twowave %>% filter(year == 2012) %>% pull(treat_100mi),
+  id_cluster = gun_twowave %>% filter(year == 2010) %>% pull(reszip),
   cut = c(0, 1),
-  n_boot = 500,
+  n_boot = 100,
   pre = FALSE,
   verbose = FALSE
 )
@@ -98,10 +99,12 @@ Yold  <- dat_14 %>% filter(caseid %in% case_full & year == 2010) %>%
           pull(guns)
 treat <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
           pull(t_100mi)
+zip   <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
+          pull(reszip)
 
 ## estimate parameters
-fit <- ord_did(Ynew, Yold, treat, cut = c(0, 1),
-               n_boot = 500, pre = TRUE, verbose = FALSE)
+fit <- ord_did(Ynew, Yold, treat, zip, cut = c(0, 1),
+               n_boot = 100, pre = TRUE, verbose = FALSE)
 
 ## equivalence test
 equiv_test <- equivalence_test(
