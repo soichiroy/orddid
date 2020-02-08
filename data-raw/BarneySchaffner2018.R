@@ -138,5 +138,7 @@ gun_threewave <- dat2 %>%
   select(caseid, year, guns, t_100mi, t_25mi, pds_100mi, pds_25mi, reszip,
     pid3, pid7, party2010)
 
+## recoding variables 
+
 ## save object
 usethis::use_data(gun_threewave, overwrite = TRUE)
