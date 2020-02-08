@@ -80,8 +80,8 @@ test_that("accurate parameter estimation (J = 3)", {
   bias_sd <- mean(sapply(fit, function(x) x$sd)) - 1.5
 
   ## checks
-  expect_lte(bias_mu, 0.01)
-  expect_lte(bias_sd, 0.01)
+  expect_lte(abs(bias_mu), 0.01)
+  expect_lte(abs(bias_sd), 0.01)
 
 })
 
