@@ -5,6 +5,8 @@
 
 <!-- badges: start -->
 
+[![Travis build
+status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
 <!-- badges: end -->
 
   - Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
@@ -12,9 +14,6 @@
   - For a detailed description of the method see:
     
     Difference-in-Differences for Ordinal Outcome
-
-[![Build
-Status](https://travis-ci.com/soichiroy/orddid.svg?branch=master)](https://travis-ci.com/soichiroy/orddid)
 
 ## Installation Instructions
 
