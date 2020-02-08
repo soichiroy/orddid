@@ -39,7 +39,7 @@ run_sim_ord_probit <- function(n_sim, n_obs, mu, sd, cutoffs) {
 
 
 ## --------------------------------------------------------------- ##
-##                        Testing Functions                        ##
+##                        Testing functions                        ##
 ## --------------------------------------------------------------- ##
 
 test_that("run check", {
