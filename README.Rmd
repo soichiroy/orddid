@@ -14,6 +14,7 @@ knitr::opts_chunk$set(
 # orddid
 
 <!-- badges: start -->
+[![Travis build status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
 <!-- badges: end -->
 
 
@@ -22,7 +23,6 @@ knitr::opts_chunk$set(
 + For a detailed description of the method see:
 
 	Difference-in-Differences for Ordinal Outcome
-
 
 
 ## Installation Instructions
