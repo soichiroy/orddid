@@ -16,6 +16,12 @@ log_like_probit <- function(par, Y, cut) {
   item  <- 1
   ll    <- 0
 
+  ## if the number of categories is more than 4,
+  ## we estimate cutoff
+  if (length(par[-c(1,2)]) > 0) {
+    cut <- c(cut, cut[length(cut)] + cumsum(exp(par[-c(1, 2)])))
+  }
+
   ## evalute the likelihood
   nj   <- sum(Y == j_min)
   ll   <- nj * log(pnorm((cut[item] - mu)/ss))
@@ -39,13 +45,29 @@ log_like_probit <- function(par, Y, cut) {
 #' Probit Regression
 #'
 #' Fitting ordered probit regression
+#' @param Y A vector of outcome
 #' @keywords internal
 fit_ord_probit <- function(Y, init = NULL, cut) {
-  if (is.null(init)) par_init <- c(0.1, 1)
+  ## input check
+  ord_probit_check_cat(Y)
+
+  ## fit ordered probit
+  if (is.null(init)) {
+    par_init <- c(0.1, 1)
+    ## initialize cutoff
+    n_cat <- (max(Y) - min(Y)) + 1
+    if (n_cat > 3) {
+      n_cutoffs <- n_cat - 1
+      ## first two cutoffs are fixed: default is c(0, 1)
+      par_init <- c(par_init, rep(-0.5, n_cutoffs-2))
+    }
+  }
   fit <- optim(
     par = par_init, fn = log_like_probit,
     Y = Y, cut = cut, method = 'BFGS')
-  return(list(mu = fit$par[1], sd = exp(fit$par[2]), ll = fit$value))
+  ## return cutoff
+  cutoff <- c(cut, cut[length(cut)] + cumsum(exp(fit$par[-c(1,2)])))
+  return(list(mu = fit$par[1], sd = exp(fit$par[2]), ll = fit$value, cutoff = cutoff))
 }
 
 
@@ -199,7 +221,7 @@ block_sample <- function(dat, id_cluster) {
     id_unique <- unique(id_cluster)   # unique cluster id
     J         <- length(id_unique)    # number of clusters
 
-    # sample cluster id & data 
+    # sample cluster id & data
     id_cluster_boot <- sample(id_unique, size = J, replace = TRUE)
     dat_boot <- dat_block_boot(dat = dat, id_cluster = id_cluster,
       id_cluster_boot = id_cluster_boot, max_cluster_size = max(table(id_cluster))

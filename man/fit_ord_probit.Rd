@@ -6,6 +6,9 @@
 \usage{
 fit_ord_probit(Y, init = NULL, cut)
 }
+\arguments{
+\item{Y}{A vector of outcome}
+}
 \description{
 Fitting ordered probit regression
 }
