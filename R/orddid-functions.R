@@ -77,6 +77,8 @@ fit_ord_probit <- function(Y, init = NULL, cut) {
 #' Fitting probit model for each period
 #' @keywords internal
 ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
+  ## input check
+  ord_did_check_input(Ynew, Yold, treat)
 
   ## fit four probit
   ## Y[d = 0, t = 0]
@@ -192,7 +194,7 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
         }
       }
 
-    }
+    } ## end of bootstrap iterations
 
     # clear the console
     cat("\n")
