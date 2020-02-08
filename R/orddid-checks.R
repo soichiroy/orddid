@@ -16,7 +16,10 @@ ord_probit_check_cat <- function(Y) {
 
 #' Input check for \link{\code{ord_did_run}}.
 #'
-#'
+#' @param Ynew Ynew from \code{ord_did_run()}.
+#' @param Yold Yold from \code{ord_did_run()}.
+#' @param treat treat from \code{ord_did_run()}.
+#' @keywords internal
 ord_did_check_input <- function(Ynew, Yold, treat) {
 
   ##
