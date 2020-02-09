@@ -42,6 +42,57 @@ log_like_probit <- function(par, Y, cut) {
   return(-ll)
 }
 
+#' Log-likelihood Function
+#'
+#' @param par A vector of parameters.
+#'  means: \code{par[1:3]}; scale: \code{par[4:6]}; cutoff: \code{par[7:]} (only when J > 3)
+#' @param Y A vector of categorical outcome.
+#' @param cut A set of two cutoffs fixed for identification. Default is \code{cut = c(0, 1)}.
+#' @param id_group A vector of group indicator.
+#' @keywords internal
+log_like_probit_group <- function(par, Y, cut, id_group) {
+  ## prep parameters
+  n_group <- length(unique(id_group))
+  mu    <- par[1:n_group]
+  ss    <- exp(par[(n_group+1):(n_group*2)])
+  j_min <- min(Y)
+  j_max <- max(Y)
+
+  ## if the number of categories is more than 4,
+  ## we estimate cutoff
+  if (length(par[-c(1:(n_group*2))]) > 0) {
+    cut <- c(cut, cut[length(cut)] + cumsum(exp(par[-c(1:(n_group*2))])))
+  }
+
+  ## evalute the likelihood
+  ll    <- 0
+  for (g in 1:n_group) {
+    ## get group params
+    mu_g <- mu[g];
+    ss_g <- ss[g]
+    item  <- 1
+
+    ## evaluate
+    nj   <- sum(Y[id_group == g] == j_min)
+    ll   <- ll + nj * log(pnorm((cut[item] - mu_g) / ss_g))
+    item <- item + 1
+
+    for (j in (j_min+1):(j_max-1)) {
+      nj <- sum(Y[id_group == g] == j)
+      ll <- ll + nj * log(
+        pnorm((cut[item] - mu_g) / ss_g) -
+        pnorm((cut[item-1] - mu_g) / ss_g)
+      )
+      item <- item + 1
+    }
+
+    nj <- sum(Y[id_group == g] == j_max)
+    ll <- ll + nj * log(1 - pnorm((max(cut) - mu_g) / ss_g))
+  }
+
+  return(-ll)
+}
+
 #' Probit Regression
 #'
 #' Fitting ordered probit regression
@@ -71,41 +122,76 @@ fit_ord_probit <- function(Y, init = NULL, cut) {
 }
 
 
-
-#' Parameter Estimation
+#' Probit regression with group dummies
 #'
-#' Fitting probit model for each period
+#' @param Y A vector of the ordinal outcome.
+#' @param id_group A vector of group indicator.
+#' @keywords internal
+fit_ord_probit_gr <- function(Y, id_group, init = NULL, cut) {
+  ## input check
+  ord_probit_check_cat(Y)
+  n_group <- length(unique(id_group))
+
+  ## fit ordered probit
+  if (is.null(init)) {
+    par_init <- c(rep(0.1, n_group), rep(0.5, n_group))
+    ## initialize cutoff
+    n_cat <- (max(Y) - min(Y)) + 1
+    if (n_cat > 3) {
+      n_cutoffs <- n_cat - 1
+      ## first two cutoffs are fixed: default is c(0, 1)
+      par_init <- c(par_init, rep(-0.5, n_cutoffs-2))
+    }
+  }
+  fit <- optim(
+    par = par_init, fn = log_like_probit_group,
+    Y = Y, cut = cut, id_group = id_group, method = 'BFGS')
+
+  ## return object
+  cutoff <- c(cut, cut[length(cut)] + cumsum(exp(fit$par[-c(1:(n_group*2))])))
+  mu_vec <- fit$par[1:n_group]
+  sd_vec <- fit$par[(n_group+1):(2*n_group)]
+  return(list(mu = mu_vec, sd = exp(sd_vec), cutoff = cutoff, ll = fit$value))
+}
+
+
+
+
+#' Parameter Estimation for the Counterfactual Outcome
+#'
 #' @keywords internal
 ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
   ## input check
   ord_did_check_input(Ynew, Yold, treat)
+  dat <- create_group_dummy(Ynew, Yold, treat, pre = pre)
 
-  ## fit four probit
-  ## Y[d = 0, t = 0]
-  fit00 <- fit_ord_probit( Y = Yold[treat == 0], cut = cut )
-  ## Y[d = 0, t = 1]
-  fit01 <- fit_ord_probit( Y = Ynew[treat == 0], cut = cut )
-  ## Y[d = 1, t = 0]
-  fit10 <- fit_ord_probit( Y = Yold[treat == 1], cut = cut )
-  # observed Y[t=1,d=1]
-  fit_tr <- fit_ord_probit( Y = Ynew[treat == 1], cut = cut )
+  ## fit probit regression
 
-  ## estimate counter factual distribution
+  fit_ct <- fit_ord_probit_gr(Y = dat$Y, id_group = dat$id_group, cut = cut)
+  fit_tr <- fit_ord_probit(Y = Ynew[treat == 1], cut = cut)
+
   if (isTRUE(pre)) {
-    ## this is pre-treatment so fit_tr has mu11 and sd11
-    mu11 <- fit_tr$mu
-    ss11 <- fit_tr$sd
+    ## fit_ct incldus "post-treatment x treatment" if pre = TRUE
+    mu11 <- fit_ct$mu[4]
+    ss11 <- fit_ct$sd[4]
   } else {
-    ## use the identification formula to recover counter-factual parameters
-    mu11 <- fit10$mu + (fit01$mu - fit00$mu) *
-            (fit10$sd / fit00$sd)
-    ss11 <- fit10$sd * fit01$sd / fit00$sd
+    ## estimated params
+    mu00 <- fit_ct$mu[1]; mu01 <- fit_ct$mu[2]; mu10 <- fit_ct$mu[3]
+    sd00 <- fit_ct$sd[1]; sd01 <- fit_ct$sd[2]; sd10 <- fit_ct$sd[3]
+
+    ## identify mean and variance of Y11
+    mu11 <- mu10 + (mu01 - mu00) * (sd10 / sd00)
+    ss11 <- sd10 * sd01 / sd00
+
   }
 
+  ##
   ## compute the probability
-  cut_new <- c(-Inf, cut, Inf)
-  Ypred <- rep(NA, (length(cut)+1))
-  for (j in 1:(length(cut)+1)) {
+  ##
+  cuotff <- fit_ct$cutoff
+  cut_new <- c(-Inf, cuotff, Inf)
+  Ypred <- rep(NA, (length(cuotff)+1))
+  for (j in 1:(length(cuotff)+1)) {
     Ypred[j] <- pnorm(cut_new[j+1], mean = mu11, sd = ss11)  -
                 pnorm(cut_new[j], mean = mu11, sd = ss11)
   }
@@ -115,15 +201,14 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
 
   ## estimatd parameters
   theta_est <- list(
-    mu00 = fit00$mu, sd00 = fit00$sd,
-    mu01 = fit01$mu, sd01 = fit01$sd,
-    mu10 = fit10$mu, sd10 = fit10$sd,
+    mu00 = mu00, sd00 = sd00,
+    mu01 = mu01, sd01 = sd01,
+    mu10 = mu10, sd10 = sd10,
     mu11 = mu11, sd11 = ss11
   )
 
   return(list("Y1" = Yobs, "Y0" = Ypred, 'mu11' = mu11, 'ss11' = ss11,
-    fit00 = fit00, fit01 = fit01, fit10 = fit10, fit_tr = fit_tr,
-    theta = theta_est
+    fit_ct = fit_ct, fit_tr = fit_tr, theta = theta_est
   ))
 }
 

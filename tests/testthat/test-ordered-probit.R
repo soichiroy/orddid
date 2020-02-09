@@ -1,5 +1,6 @@
 ##
-## test code for odered probit
+## test code for ordered probit
+##
 
 context("ord_probit")
 
@@ -47,7 +48,7 @@ test_that("run check", {
   Y <- Y_gen(n_obs = 500, mu = 1, sd = 2, cutoffs = c(0, 1, 1.5))
 
   # fit the probit
-  debugonce(fit_ord_probit)
+  # debugonce(fit_ord_probit)
   fit <- fit_ord_probit(Y, cut = c(0, 1))
   expect_length(fit, 4)
   expect_length(fit$cutoff, 3)

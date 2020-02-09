@@ -2,11 +2,11 @@
 % Please edit documentation in R/orddid-functions.R
 \name{ord_did_run}
 \alias{ord_did_run}
-\title{Parameter Estimation}
+\title{Parameter Estimation for the Counterfactual Outcome}
 \usage{
 ord_did_run(Ynew, Yold, treat, cut, pre = FALSE)
 }
 \description{
-Fitting probit model for each period
+Parameter Estimation for the Counterfactual Outcome
 }
 \keyword{internal}
