@@ -1,6 +1,6 @@
 
 ##
-## test code for ordered probit
+## test code for ordered probit with group indicator
 ##
 
 context("ord_probit_group")
@@ -51,14 +51,13 @@ run_sim_ord_probit_gr <- function(n_sim, n_obs, mu, sd, cutoffs) {
 
 # debugonce(fit_ord_probit_gr)
 # debugonce(log_like_probit_group)
-xx <- run_sim_ord_probit_gr(
-  n_sim = 1, n_obs = 1000,
-  mu = c(0.5, 0.5, 0.5),
-  sd = c(1.5, 1.5, 1.5),
-  cutoffs = c(0, 1, 1.5)
-)
-
-
+# xx <- run_sim_ord_probit_gr(
+#   n_sim = 1, n_obs = 1000,
+#   mu = c(0.5, 0.5, 0.5),
+#   sd = c(1.5, 1.5, 1.5),
+#   cutoffs = c(0, 1, 1.5)
+# )
+#
 
 test_that("accurate parameter estimation (J = 3)", {
   n_sim  <- 150
