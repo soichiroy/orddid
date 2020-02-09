@@ -17,12 +17,29 @@
 ## --------------------------------------------------------------- ##
 
 
-#' Conduct an equivalence test of q1(v) = q0(v)
+#' Conduct an equivalence test of the distributional parallel trends assumption.
 #'
-#' @param object a fitted object from \code{orddid}.
-#' @param alpha level of a test. Should be between 0 and 1. Default is 0.05.
-#' @param threshold an equivalance threshold.
-#' @return a list of outputs.
+#' \code{equivalence_test()} implements an equivalance test to assess the distributional parallel trends assumption
+#'  using the data from the pre-treatment periods.
+#'
+#' @param object A fitted object from \code{\link{ord_did}}.
+#' @param alpha The level of a test. This value should take between 0 and 1. Default is 0.05.
+#' @param threshold An equivalance threshold. 
+#'    If left as \code{NULL}, the data-driven threshold, estimated in \code{\link{calc_threshold}}, is used for the test.
+#' @return \code{equivalence_test()} returns a list of class `orddid.test', which contains the following items:
+#'    \item{tv}{A vector of point-wise deviation between q1(v) and q0(v).}
+#'    \item{tv_var}{A vector of variances for each t(v).}
+#'    \item{tmax}{A maximum deviation of q1(v) and q0(v).}
+#'    \item{v_range}{A range of v used to evaluate q1 and q0.}
+#'    \item{Uv}{Point wise \code{1 - alpha} level upper confidence interval.}
+#'    \item{Lv}{Point wise \code{1 - alpha} level lower confidence interval.}
+#'    \item{Umax}{Maximum upper bound.}
+#'    \item{Lmin}{Minimum lower bound.}
+#'    \item{Upvalue}{Point-wise pvalues associated with the upper bounds.}
+#'    \item{Lpvalue}{Point-wise pvalues associated with the lower bounds.}
+#'    \item{pvalue}{P-value of the test.}
+#'    \item{zscore}{Z-score of the test.}
+#'    \item{reject}{Decision of the equivalance test. If \code{TRUE}, the test rejects the null of non-equivalance.}
 #' @importFrom Matrix bdiag
 #' @export
 equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
@@ -101,11 +118,13 @@ equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
 
 
 
-#' Selecting Equivalence Threshold
+#' Selecting the equivalence threshold
 #'
-#' A function to compute the data-dependent threshold for the equivalence test.
-#' @param object a fitted object from \code{orddid}.
-#' @return a scalar value of threshold.
+#' \code{calc_threshold()} computes the data-dependent threshold for the equivalence test.
+#' 
+#' @param object An object from \code{\link{ord_did}}, where the estimation is based on the pre-treatment data (\code{pre = TRUE}).
+#' @return \code{calc_threshold()} return a value of equivalance threshold, 
+#'  which can be supplied to \code{threshold} argument in \code{\link{equivalence_test}}.
 #' @export
 calc_threshold <- function(object, omega = 0.05) {
   if (!("orddid.fit" %in% class(object))) {

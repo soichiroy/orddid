@@ -2,16 +2,17 @@
 % Please edit documentation in R/orddid-summary.R
 \name{summary.orddid}
 \alias{summary.orddid}
-\title{Summary function}
+\title{Get summaries of ord_did() and equivalence_test() objects.}
 \usage{
 \method{summary}{orddid}(obj, cumulative = TRUE)
 }
 \arguments{
-\item{obj}{an output object from \code{orddid} or \code{equivalence_test}.}
+\item{obj}{An object from \code{\link{ord_did}} or \code{\link{equivalence_test}}.}
 
-\item{cumulative}{Default is \code{TRUE}. Only effective for displaying the causal effects.
-If \code{TRUE}, cumulative effect is presented.}
+\item{cumulative}{A boolean argument to indicate if cumulative effect is reported.
+Default is \code{TRUE}. Only effective for displaying the causal effects.}
 }
 \description{
-Summary function
+\code{summary.orddid()} calculates and reports treatment effects and their uncertainties from a \code{\link{ord_did}} object.
+\code{summary.orddid()} reports summaries of an equivalance test when an \code{\link{equivalence_test}} object is provided.
 }

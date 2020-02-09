@@ -4,29 +4,36 @@
 \alias{ord_did}
 \title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1), n_boot,
-  pre = FALSE, verbose = FALSE)
+ord_did(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
+  n_boot = 500, pre = FALSE, verbose = FALSE)
 }
 \arguments{
-\item{Ynew}{a vector of outcome for the post-treatment period.}
+\item{Ynew}{A numeric vector of ordinal outcome for the post-treatment period.}
 
-\item{Yold}{a vector of outcome for the pre-treatment period.}
+\item{Yold}{A numeric vector of ordinal outcome for the pre-treatment period.}
 
-\item{treat}{a vector of treatment indicator.}
+\item{treat}{A numeric vector of treatment indicator. 
+The treatment group should take 1 and the control group should take 0.}
 
-\item{id_cluster}{a vector of cluster id.
-If left \code{NULL}, bootstrap is blocked at the individaul level}
+\item{id_cluster}{A vector of cluster id.
+If left as \code{NULL}, bootstrap is implemented at the individual level.}
 
-\item{cut}{a vector of cutoffs.}
+\item{cut}{A vector of cutoffs. Two numeric values should be specified. Default is \code{cut = c(0, 1)}.}
 
-\item{n_boot}{the number of boostrapt iterations for computing uncertainty. Default is 500.}
+\item{n_boot}{The number of boostrapt iterations for estimating the variance. Default is \code{n_boot = 500}.}
 
-\item{pre}{a boolean to indicate if data comes from entirely pre-treatment periods.}
+\item{pre}{A boolean argument used to indicate if the data comes entirely from pre-treatment periods.
+This should be \code{TRUE} when the output is supplied to \code{\link{equivalence_test}}.}
 
-\item{verbose}{If \code{TRUE}, print the current iteration in the bootstrap.}
+\item{verbose}{If \code{TRUE}, print the progress of bootstrap iterations.}
 }
 \value{
-A list
+\code{ord_did} returns a list of class `orddid' containing the following components:
+\item{fit}{A list with the output of the ordinal DID estimators, 
+           which contains parameter estimates and predicted probabilities for each categories.}
+\item{boot}{A list with the output of bootstraps,
+            which contains parameter estimates and predicted probabilities for each categories.}
+\item{boot_params}{A list with all objects generated during the bootstrap step.}
 }
 \description{
 A function to implement the difference-in-differences for the ordinal outcome.

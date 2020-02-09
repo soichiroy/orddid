@@ -1,8 +1,12 @@
 
-#' Summary function
-#' @param obj an output object from \code{orddid} or \code{equivalence_test}.
-#' @param cumulative Default is \code{TRUE}. Only effective for displaying the causal effects.
-#'  If \code{TRUE}, cumulative effect is presented.
+#' Get summaries of ord_did() and equivalence_test() objects.
+#' 
+#' \code{summary.orddid()} calculates and reports treatment effects and their uncertainties from a \code{\link{ord_did}} object.
+#' \code{summary.orddid()} reports summaries of an equivalance test when an \code{\link{equivalence_test}} object is provided.
+#'
+#' @param obj An object from \code{\link{ord_did}} or \code{\link{equivalence_test}}.
+#' @param cumulative A boolean argument to indicate if cumulative effect is reported.
+#'    Default is \code{TRUE}. Only effective for displaying the causal effects.
 #' @export
 summary.orddid <- function(obj, cumulative = TRUE) {
 
@@ -21,7 +25,7 @@ summary.orddid <- function(obj, cumulative = TRUE) {
       rownames(tab) <- c(paste("Delta[", 2:(J-1), "-", J,"]", sep = ""),
                          paste("Delta[", J, "]", sep = ""))
     } else {
-      rownames(tab) <- sapply(1:J, function(j) paste("Delta[", j, "]", sep = ""))
+      rownames(tab) <- sapply(1:J, function(j) paste("zeta[", j, "]", sep = ""))
     }
 
     class(tab)    <- c('summary.orddid', 'summary.orddid.fit')
@@ -33,7 +37,7 @@ summary.orddid <- function(obj, cumulative = TRUE) {
   return(tab)
 }
 
-#' Print function
+
 #' @importFrom cli cat_rule
 #' @export
 print.summary.orddid <- function(obj) {

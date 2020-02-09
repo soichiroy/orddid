@@ -2,16 +2,17 @@
 % Please edit documentation in R/orddid-diagnostic.R
 \name{calc_threshold}
 \alias{calc_threshold}
-\title{Selecting Equivalence Threshold}
+\title{Selecting the equivalence threshold}
 \usage{
 calc_threshold(object, omega = 0.05)
 }
 \arguments{
-\item{object}{a fitted object from \code{orddid}.}
+\item{object}{An object from \code{\link{ord_did}}, where the estimation is based on the pre-treatment data (\code{pre = TRUE}).}
 }
 \value{
-a scalar value of threshold.
+\code{calc_threshold()} return a value of equivalance threshold, 
+ which can be supplied to \code{threshold} argument in \code{\link{equivalence_test}}.
 }
 \description{
-A function to compute the data-dependent threshold for the equivalence test.
+\code{calc_threshold()} computes the data-dependent threshold for the equivalence test.
 }
