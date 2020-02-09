@@ -25,7 +25,7 @@ Barney, David; Schaffner, Brian.
  \url{https://doi.org/10.7910/DVN/YJQIXP}, Harvard Dataverse, V1, 2018.
 
  Ansolabehere, Stephen; Schaffner, Brian. 
-  ``2010 - 2012 CCES Panel Study/''
+  ``2010 - 2012 CCES Panel Study.''
   \url{https://doi.org/10.7910/DVN/24416}, Harvard Dataverse, V4, 2014.
 }
 \usage{
