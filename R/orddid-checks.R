@@ -27,12 +27,21 @@ ord_did_check_input <- function(Ynew, Yold, treat, id_cluster, n_boot)  {
     stop("n_boot has to be greater than 2.")
   }
 
-  n1 <- length(na.omit(Ynew))
-  n0 <- length(na.omit(Yold))
-  nT <- length(na.omit(treat))
-  nI <- length(na.omit(id_cluster))
-  if (!(length(unique(c(n1, n0, nT, nI))) == 1)) {
-    stop("Length of inputs does not match.")
+  if (is.null(id_cluster)) {
+    n1 <- length(na.omit(Ynew))
+    n0 <- length(na.omit(Yold))
+    nT <- length(na.omit(treat))
+    if (!(length(unique(c(n1, n0, nT))) == 1)) {
+      stop("Length of inputs does not match.")
+    }
+  } else {
+    n1 <- length(na.omit(Ynew))
+    n0 <- length(na.omit(Yold))
+    nT <- length(na.omit(treat))
+    nI <- length(na.omit(id_cluster))
+    if (!(length(unique(c(n1, n0, nT, nI))) == 1)) {
+      stop("Length of inputs does not match.")
+    }
   }
 }
 
