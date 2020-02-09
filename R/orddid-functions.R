@@ -72,7 +72,7 @@ log_like_probit_group <- function(par, Y, cut, id_group) {
     ss_g <- ss[g]
     item  <- 1
 
-    ## evaluate
+    ## evaluate ll function 
     nj   <- sum(Y[id_group == g] == j_min)
     ll   <- ll + nj * log(pnorm((cut[item] - mu_g) / ss_g))
     item <- item + 1
@@ -102,7 +102,7 @@ fit_ord_probit <- function(Y, init = NULL, cut) {
   ## input check
   ord_probit_check_cat(Y)
 
-  ## fit ordered probit
+  ## initial value setup
   if (is.null(init)) {
     par_init <- c(0.1, 1)
     ## initialize cutoff
@@ -113,9 +113,13 @@ fit_ord_probit <- function(Y, init = NULL, cut) {
       par_init <- c(par_init, rep(-0.5, n_cutoffs-2))
     }
   }
+
+  ## fit ordered probit
   fit <- optim(
     par = par_init, fn = log_like_probit,
-    Y = Y, cut = cut, method = 'BFGS')
+    Y = Y, cut = cut, method = 'BFGS'
+  )
+
   ## return cutoff
   cutoff <- c(cut, cut[length(cut)] + cumsum(exp(fit$par[-c(1,2)])))
   return(list(mu = fit$par[1], sd = exp(fit$par[2]), ll = fit$value, cutoff = cutoff))
@@ -132,7 +136,7 @@ fit_ord_probit_gr <- function(Y, id_group, init = NULL, cut) {
   ord_probit_check_cat(Y)
   n_group <- length(unique(id_group))
 
-  ## fit ordered probit
+  ## initial value setup
   if (is.null(init)) {
     par_init <- c(rep(0.1, n_group), rep(0.5, n_group))
     ## initialize cutoff
@@ -143,14 +147,19 @@ fit_ord_probit_gr <- function(Y, id_group, init = NULL, cut) {
       par_init <- c(par_init, rep(-0.5, n_cutoffs-2))
     }
   }
+
+  ## fit ordered probit
   fit <- optim(
     par = par_init, fn = log_like_probit_group,
-    Y = Y, cut = cut, id_group = id_group, method = 'BFGS')
+    Y = Y, cut = cut, id_group = id_group,
+    method = 'BFGS'
+  )
 
   ## return object
   cutoff <- c(cut, cut[length(cut)] + cumsum(exp(fit$par[-c(1:(n_group*2))])))
   mu_vec <- fit$par[1:n_group]
   sd_vec <- fit$par[(n_group+1):(2*n_group)]
+
   return(list(mu = mu_vec, sd = exp(sd_vec), cutoff = cutoff, ll = fit$value))
 }
 
@@ -182,11 +191,10 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
     ## identify mean and variance of Y11
     mu11 <- mu10 + (mu01 - mu00) * (sd10 / sd00)
     ss11 <- sd10 * sd01 / sd00
-
   }
 
   ##
-  ## compute the probability
+  ## compute the probability Pr(Y(0) = j | D = 1)
   ##
   cuotff <- fit_ct$cutoff
   cut_new <- c(-Inf, cuotff, Inf)
@@ -196,10 +204,14 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
                 pnorm(cut_new[j], mean = mu11, sd = ss11)
   }
 
-  ## compute observed Pr(Y(1) = j | D)
+  ##
+  ## compute observed Pr(Y(1) = j | D = 1)
+  ##
   Yobs <- as.vector(prop.table(table(Ynew[treat==1])))
 
+  ##
   ## estimatd parameters
+  ##
   theta_est <- list(
     mu00 = mu00, sd00 = sd00,
     mu01 = mu01, sd01 = sd01,
@@ -235,59 +247,61 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
     id_cluster <- as.numeric(as.factor(id_cluster))
   }
 
-  ## assuming panel structure
-  ## this check is minimum
-  if (length(Ynew) == length(Yold)) {
-    # define an iterator
-    b <- 1
 
-    # reject the bootstrap replica when optimization fails
-    # typically rejection happens when outcome is not
-    dat_tmp <- cbind(Ynew, Yold, treat)
+  ##
+  ## setup for bootstrap
+  ##
+  # define an iterator
+  b <- 1
 
-    while(b <= n_boot) {
-      tryCatch({
-        # sample bootstrap index
-        dat_boot <- block_sample(dat_tmp, id_cluster)
+  # reject the bootstrap replica when optimization fails
+  # typically rejection happens when outcome is not
+  dat_tmp <- cbind(Ynew, Yold, treat)
 
-        # fit the model
-        fit_tmp <- ord_did_run(
-          Ynew  = dat_boot[, 1],
-          Yold  = dat_boot[ ,2],
-          treat = dat_boot[, 3],
-          cut   = cut
-        )
+  ## bootstrap -----------------------------------------------------------
+  while(b <= n_boot) {
+    tryCatch({
+      # sample bootstrap index
+      dat_boot <- block_sample(dat_tmp, id_cluster)
 
-        # save
-        boot_save[[1]][b,]    <- fit_tmp$Y1  # Yobs
-        boot_save[[2]][b,]    <- fit_tmp$Y0  # Y(0)
-        boot_save[[3]][b]     <- fit_tmp$mu11
-        boot_save[[4]][b]     <- fit_tmp$ss11
-        boot_params_save[[b]] <- unlist(fit_tmp$theta)
+      # fit the model
+      fit_tmp <- ord_did_run(
+        Ynew  = dat_boot[, 1],
+        Yold  = dat_boot[ ,2],
+        treat = dat_boot[, 3],
+        cut   = cut
+      )
 
-        # update iterator
-        b <- b + 1
-      }, error = function(e) {
-        NULL
-      })
+      # save estimates
+      boot_save[[1]][b,]    <- fit_tmp$Y1  # Yobs
+      boot_save[[2]][b,]    <- fit_tmp$Y0  # Y(0)
+      boot_save[[3]][b]     <- fit_tmp$mu11
+      boot_save[[4]][b]     <- fit_tmp$ss11
+      boot_params_save[[b]] <- unlist(fit_tmp$theta)
 
-      ## verbose
-      if (isTRUE(verbose)) {
-        if ((b %% iter_show) == 0) {
-            cat('\r', b, "out of", n_boot, "bootstrap iterations")
-            flush.console()
-        }
+      # update iterator
+      b <- b + 1
+    }, error = function(e) {
+      NULL
+    })
+
+    ## verbose ----------------------------------------------------
+    if (isTRUE(verbose)) {
+      if ((b %% iter_show) == 0) {
+          cat('\r', b, "out of", n_boot, "bootstrap iterations")
+          flush.console()
       }
+    }
+    ## end of verbose ---------------------------------------------
 
-    } ## end of bootstrap iterations
-
-    # clear the console
-    cat("\n")
-    # concatenate all params
-    boot_params <- do.call("rbind", boot_params_save)
-  } else {
-    stop('length of two outcomes does not match')
   }
+  ## end of bootstrap iterations -----------------------------------------
+
+  # clear the console
+  cat("\n")
+
+  # concatenate all params
+  boot_params <- do.call("rbind", boot_params_save)
 
   return(list("boot_params" = boot_params, "boot_save" = boot_save))
 }
