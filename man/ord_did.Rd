@@ -30,9 +30,9 @@ This should be \code{TRUE} when the output is supplied to \code{\link{equivalenc
 \value{
 \code{ord_did} returns a list of class `orddid' containing the following components:
 \item{fit}{A list with the output of the ordinal DID estimators, 
-           which contains parameter estimates and predicted probabilities for each categories.}
+           which contains parameter estimates and predicted probabilities for each category.}
 \item{boot}{A list with the output of bootstraps,
-            which contains parameter estimates and predicted probabilities for each categories.}
+            which contains parameter estimates and predicted probabilities for each category.}
 \item{boot_params}{A list with all objects generated during the bootstrap step.}
 }
 \description{

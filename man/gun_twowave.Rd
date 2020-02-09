@@ -8,7 +8,7 @@
   \describe{
      \item{caseid}{Unique id of a respondent.}
      \item{year}{Year of the response.}
-     \item{guns}{Attitudes towards gun control, corresponding to a variable in `CC320' in CCES. 
+     \item{guns}{Attitudes towards gun control, corresponding to a variable `CC320' in CCES. 
                  (1) "Less Strict", (2) "Kept As They Are" and (3) "More Strict".}
      \item{pds_25mi}{``Prior exposure'' variable, taking (1) if the mass shootings happened within 25 miles between 2000 and 2010.}
      \item{pds_100mi}{``Prior exposure'' variable, taking (1) if the mass shootings happened within 100 miles between 2000 and 2010.}

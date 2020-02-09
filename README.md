@@ -11,10 +11,6 @@ status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travi
 
   - Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
 
-  - For a detailed description of the method see:
-    
-    Difference-in-Differences for Ordinal Outcome
-
 ## Installation Instructions
 
 You can install the development version from
@@ -30,21 +26,6 @@ install_github("soichiroy/orddid", dependencies=TRUE)
 This is a basic example which shows you how to solve a common problem:
 
 ``` r
-## load package
-library(orddid)
-library(dplyr)
-#> 
-#> Attaching package: 'dplyr'
-#> The following objects are masked from 'package:stats':
-#> 
-#>     filter, lag
-#> The following objects are masked from 'package:base':
-#> 
-#>     intersect, setdiff, setequal, union
-
-## load example data
-data("gun_twowave")
-
 ## Estimate causal effects
 set.seed(1234)
 fit <- ord_did(
@@ -52,26 +33,26 @@ fit <- ord_did(
   Yold = gun_twowave %>% filter(year == 2010) %>% pull(guns),
   treat = gun_twowave %>% filter(year == 2012) %>% pull(treat_100mi),
   id_cluster = gun_twowave %>% filter(year == 2010) %>% pull(reszip),
-  cut = c(0, 1),
   n_boot = 100,
   pre = FALSE,
   verbose = FALSE
 )
 
-## view summary
-summary(fit)
-#> ── Effect Estimates ────────────────────────────────────────────────────
-#>              Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
-#> Delta[2-3] -0.00562 0.00485  -0.01314   0.00253  -0.01426    0.0035
-#> Delta[3]    0.00431 0.00610  -0.00589   0.01302  -0.00679    0.0146
-
-## non-cumulative effect
+## view summary of the output 
+## non-cumulative effects
 summary(fit, cumulative = FALSE)
-#> ── Effect Estimates ────────────────────────────────────────────────────
-#>            Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
-#> Delta[1]  0.00562 0.00485  -0.00253   0.01314  -0.00350   0.01426
-#> Delta[2] -0.00993 0.00775  -0.02247   0.00277  -0.02401   0.00422
-#> Delta[3]  0.00431 0.00610  -0.00589   0.01302  -0.00679   0.01461
+#> ── Effect Estimates ──────────────────────────────────────────────────
+#>           Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
+#> zeta[1]  0.00559 0.00476  -0.00237   0.01233  -0.00544   0.01365
+#> zeta[2] -0.00991 0.00716  -0.02138   0.00119  -0.02282   0.00404
+#> zeta[3]  0.00432 0.00634  -0.00590   0.01536  -0.00882   0.01647
+
+## cumulative effects
+summary(fit)
+#> ── Effect Estimates ──────────────────────────────────────────────────
+#>              Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
+#> Delta[2-3] -0.00559 0.00476   -0.0123   0.00237  -0.01365   0.00544
+#> Delta[3]    0.00432 0.00634   -0.0059   0.01536  -0.00882   0.01647
 ```
 
 ## Example: Additional Pre-treatment Period is Available
@@ -118,7 +99,7 @@ zip   <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
           pull(reszip)
 
 ## estimate parameters
-fit <- ord_did(Ynew, Yold, treat, zip, cut = c(0, 1),
+fit <- ord_did(Ynew, Yold, treat, zip,
                n_boot = 100, pre = TRUE, verbose = FALSE)
 
 ## equivalence test
@@ -128,9 +109,9 @@ equiv_test <- equivalence_test(
 
 ## view result
 summary(equiv_test)
-#> ── Equivalence Test ────────────────────────────────────────────────────
+#> ── Equivalence Test ──────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>        0.020332       -0.036161        0.021210        0.000204 
+#>         0.02033        -0.03847         0.02321         0.00102 
 #> 
 #> [1] H0 of no-equivalence is REJECTED with threshold 0.054
 
@@ -149,9 +130,9 @@ equiv_test2 <- equivalence_test(
 
 ## view result
 summary(equiv_test2)
-#> ── Equivalence Test ────────────────────────────────────────────────────
+#> ── Equivalence Test ──────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>          0.0203         -0.0362          0.0212          0.8589 
+#>          0.0203         -0.0385          0.0232          0.8267 
 #> 
 #> [1] H0 of no-equivalence is NOT REJECTED with threshold 0.01
 ```

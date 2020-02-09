@@ -34,14 +34,16 @@ install_github("soichiroy/orddid", dependencies=TRUE)
 
 This is a basic example which shows you how to solve a common problem:
 
-```{r example}
+```{r include=FALSE}
 ## load package
 library(orddid)
 library(dplyr)
 
 ## load example data
 data("gun_twowave")
+```
 
+```{r example}
 ## Estimate causal effects
 set.seed(1234)
 fit <- ord_did(
@@ -49,17 +51,17 @@ fit <- ord_did(
   Yold = gun_twowave %>% filter(year == 2010) %>% pull(guns),
   treat = gun_twowave %>% filter(year == 2012) %>% pull(treat_100mi),
   id_cluster = gun_twowave %>% filter(year == 2010) %>% pull(reszip),
-  cut = c(0, 1),
   n_boot = 100,
   pre = FALSE,
   verbose = FALSE
 )
 
-## view summary
-summary(fit)
-
-## non-cumulative effect
+## view summary of the output 
+## non-cumulative effects
 summary(fit, cumulative = FALSE)
+
+## cumulative effects
+summary(fit)
 ```
 
 
@@ -100,7 +102,7 @@ zip   <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
           pull(reszip)
 
 ## estimate parameters
-fit <- ord_did(Ynew, Yold, treat, zip, cut = c(0, 1),
+fit <- ord_did(Ynew, Yold, treat, zip,
                n_boot = 100, pre = TRUE, verbose = FALSE)
 
 ## equivalence test

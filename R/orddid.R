@@ -16,9 +16,9 @@
 #' @param verbose If \code{TRUE}, print the progress of bootstrap iterations.
 #' @return \code{ord_did} returns a list of class `orddid' containing the following components:
 #' \item{fit}{A list with the output of the ordinal DID estimators, 
-#'            which contains parameter estimates and predicted probabilities for each categories.}
+#'            which contains parameter estimates and predicted probabilities for each category.}
 #' \item{boot}{A list with the output of bootstraps,
-#'             which contains parameter estimates and predicted probabilities for each categories.}
+#'             which contains parameter estimates and predicted probabilities for each category.}
 #' \item{boot_params}{A list with all objects generated during the bootstrap step.}
 #' @export
 ord_did <- function(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),

@@ -14,19 +14,18 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
   dat <- create_group_dummy(Ynew, Yold, treat, pre = pre)
 
   ## fit probit regression
-
   fit_ct <- fit_ord_probit_gr(Y = dat$Y, id_group = dat$id_group, cut = cut)
   fit_tr <- fit_ord_probit(Y = Ynew[treat == 1], cut = cut)
+  
+  ## estimated params
+  mu00 <- fit_ct$mu[1]; mu01 <- fit_ct$mu[2]; mu10 <- fit_ct$mu[3]
+  sd00 <- fit_ct$sd[1]; sd01 <- fit_ct$sd[2]; sd10 <- fit_ct$sd[3]
 
   if (isTRUE(pre)) {
     ## fit_ct incldus "post-treatment x treatment" if pre = TRUE
     mu11 <- fit_ct$mu[4]
     ss11 <- fit_ct$sd[4]
   } else {
-    ## estimated params
-    mu00 <- fit_ct$mu[1]; mu01 <- fit_ct$mu[2]; mu10 <- fit_ct$mu[3]
-    sd00 <- fit_ct$sd[1]; sd01 <- fit_ct$sd[2]; sd10 <- fit_ct$sd[3]
-
     ## identify mean and variance of Y11
     mu11 <- mu10 + (mu01 - mu00) * (sd10 / sd00)
     ss11 <- sd10 * sd01 / sd00
