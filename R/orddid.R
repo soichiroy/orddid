@@ -21,7 +21,7 @@
 #'             which contains parameter estimates and predicted probabilities for each category.}
 #' \item{boot_params}{A list with all objects generated during the bootstrap step.}
 #' @examples
-#'\dontrun{
+#'\donttest{
 #' ## load packages
 #' library(orddid)
 #' library(dplyr)

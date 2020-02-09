@@ -39,7 +39,7 @@ This should be \code{TRUE} when the output is supplied to \code{\link{equivalenc
 \code{ord_did()} implements the difference-in-differences for the ordinal outcome.
 }
 \examples{
-\dontrun{
+\donttest{
 ## load packages
 library(orddid)
 library(dplyr)
