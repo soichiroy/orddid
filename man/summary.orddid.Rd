@@ -7,7 +7,7 @@
 \method{summary}{orddid}(obj, cumulative = TRUE)
 }
 \arguments{
-\item{obj}{an output object from \code{\link{orddid}} or \code{\link{equivalence_test}}.}
+\item{obj}{an output object from \link{\code{orddid}} or \link{\code{equivalence_test}}.}
 
 \item{cumulative}{Default is \code{TRUE}. Only effective for displaying the causal effects.
 If \code{TRUE}, cumulative effect is presented.}

@@ -2,7 +2,7 @@
 % Please edit documentation in R/orddid-checks.R
 \name{ord_did_check_input}
 \alias{ord_did_check_input}
-\title{Input check for \link{\code{ord_did_run}}.}
+\title{Input check for \code{ord_did_run}.}
 \usage{
 ord_did_check_input(Ynew, Yold, treat)
 }
@@ -14,6 +14,6 @@ ord_did_check_input(Ynew, Yold, treat)
 \item{treat}{treat from \code{ord_did_run()}.}
 }
 \description{
-Input check for \link{\code{ord_did_run}}.
+Input check for \code{ord_did_run}.
 }
 \keyword{internal}

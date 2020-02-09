@@ -2,7 +2,7 @@
 % Please edit documentation in R/orddid-checks.R
 \name{ord_probit_check_cat}
 \alias{ord_probit_check_cat}
-\title{Input check for \link{\code{fit_ord_probit}}.}
+\title{Input check for \code{fit_ord_probit}.}
 \usage{
 ord_probit_check_cat(Y)
 }

@@ -1,4 +1,4 @@
-#' Input check for \link{\code{fit_ord_probit}}.
+#' Input check for \code{fit_ord_probit}.
 #'
 #' This function check if there is missing categories. For example, if Ymin = 0 and Ymax=J-1.
 #'  the function checks there are J unique values in Y.
@@ -14,7 +14,7 @@ ord_probit_check_cat <- function(Y) {
 }
 
 
-#' Input check for \link{\code{ord_did_run}}.
+#' Input check for \code{ord_did_run}.
 #'
 #' @param Ynew Ynew from \code{ord_did_run()}.
 #' @param Yold Yold from \code{ord_did_run()}.

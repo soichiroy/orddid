@@ -3,4 +3,12 @@
 language: R
 cache: packages
 warnings_are_errors: false
+os:
+  - linux
+  - osx
+latex: false
+env:
+  global:
+    - R_CHECK_ARGS="--no-build-vignettes"
+
 
