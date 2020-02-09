@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 [![Travis build status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
+[![Codecov test coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)](https://codecov.io/gh/soichiroy/orddid?branch=master)
 <!-- badges: end -->
 
 
@@ -32,7 +33,6 @@ install_github("soichiroy/orddid", dependencies=TRUE)
 ```
 ## Example: Two Time Periods
 
-This is a basic example which shows you how to solve a common problem:
 
 ```{r include=FALSE, echo = TRUE}
 ## load package

@@ -2,11 +2,23 @@
 % Please edit documentation in R/orddid-checks.R
 \name{ord_did_check_input}
 \alias{ord_did_check_input}
-\title{Input check for \code{ord_did_run}.}
+\title{Input check for \code{ord_did}.}
 \usage{
+ord_did_check_input(Ynew, Yold, treat)
+
 ord_did_check_input(Ynew, Yold, treat)
 }
 \arguments{
+\item{Ynew}{Ynew from \code{ord_did()}.}
+
+\item{Yold}{Yold from \code{ord_did()}.}
+
+\item{treat}{treat from \code{ord_did()}.}
+
+\item{id_cluster}{id_cluster from \code{ord_did()}.}
+
+\item{n_boot}{n_boot from \code{ord_did()}.}
+
 \item{Ynew}{Ynew from \code{ord_did_run()}.}
 
 \item{Yold}{Yold from \code{ord_did_run()}.}
@@ -14,6 +26,8 @@ ord_did_check_input(Ynew, Yold, treat)
 \item{treat}{treat from \code{ord_did_run()}.}
 }
 \description{
+Input check for \code{ord_did}.
+
 Input check for \code{ord_did_run}.
 }
 \keyword{internal}

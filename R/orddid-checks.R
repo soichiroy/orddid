@@ -14,6 +14,37 @@ ord_probit_check_cat <- function(Y) {
 }
 
 
+#' Input check for \code{ord_did}.
+#'
+#' @param Ynew Ynew from \code{ord_did()}.
+#' @param Yold Yold from \code{ord_did()}.
+#' @param treat treat from \code{ord_did()}.
+#' @param id_cluster id_cluster from \code{ord_did()}.
+#' @param n_boot n_boot from \code{ord_did()}.
+#' @keywords internal
+ord_did_check_input <- function(Ynew, Yold, treat, id_cluster, n_boot)  {
+  if (!(n_boot >= 2)) {
+    stop("n_boot has to be greater than 2.")
+  }
+
+  if (is.null(id_cluster)) {
+    n1 <- length(na.omit(Ynew))
+    n0 <- length(na.omit(Yold))
+    nT <- length(na.omit(treat))
+    if (!(length(unique(c(n1, n0, nT))) == 1)) {
+      stop("Length of inputs does not match.")
+    }
+  } else {
+    n1 <- length(na.omit(Ynew))
+    n0 <- length(na.omit(Yold))
+    nT <- length(na.omit(treat))
+    nI <- length(na.omit(id_cluster))
+    if (!(length(unique(c(n1, n0, nT, nI))) == 1)) {
+      stop("Length of inputs does not match.")
+    }
+  }
+}
+
 #' Input check for \code{ord_did_run}.
 #'
 #' @param Ynew Ynew from \code{ord_did_run()}.

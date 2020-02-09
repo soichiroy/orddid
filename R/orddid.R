@@ -5,7 +5,7 @@
 #'
 #' @param Ynew A numeric vector of ordinal outcome for the post-treatment period.
 #' @param Yold A numeric vector of ordinal outcome for the pre-treatment period.
-#' @param treat A numeric vector of treatment indicator. 
+#' @param treat A numeric vector of treatment indicator.
 #'  The treatment group should take 1 and the control group should take 0.
 #' @param id_cluster A vector of cluster id.
 #'   If left as \code{NULL}, bootstrap is implemented at the individual level.
@@ -15,21 +15,22 @@
 #'  This should be \code{TRUE} when the output is supplied to \code{\link{equivalence_test}}.
 #' @param verbose If \code{TRUE}, print the progress of bootstrap iterations.
 #' @return \code{ord_did()} returns a list of class `orddid' containing the following components:
-#' \item{fit}{A list with the output of the ordinal DID estimators, 
+#' \item{fit}{A list with the output of the ordinal DID estimators,
 #'            which contains parameter estimates and predicted probabilities for each category.}
 #' \item{boot}{A list with the output of bootstraps,
 #'             which contains parameter estimates and predicted probabilities for each category.}
 #' \item{boot_params}{A list with all objects generated during the bootstrap step.}
-#' @examples 
-#' ## load packages 
+#' @examples
+#'\donttest{
+#' ## load packages
 #' library(orddid)
 #' library(dplyr)
-#' 
+#'
 #' ## load example data
 #' data("gun_twowave")
-#' 
-#' ## run 
-#' ## fit the ordinal DID 
+#'
+#' ## run
+#' ## fit the ordinal DID
 #' set.seed(1234)
 #' fit <- ord_did(
 #'   Ynew = gun_twowave %>% filter(year == 2012) %>% pull(guns),
@@ -40,17 +41,21 @@
 #'   pre = FALSE,
 #'   verbose = FALSE
 #' )
-#' 
-#' ## view summary of the output 
+#'
+#' ## view summary of the output
 #' ## non-cumulative effects
 #' summary(fit, cumulative = FALSE)
-#' 
+#'
 #' ## cumulative effects
 #' summary(fit)
-#' 
+#' }
 #' @export
 ord_did <- function(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
                     n_boot = 500, pre = FALSE, verbose = FALSE) {
+
+  ## quick input check
+  ord_did_check_input(Ynew, Yold, treat, id_cluster, n_boot)
+
   ## fit on the obs data
   fit <- ord_did_run(Ynew, Yold, treat, cut, pre)
 
