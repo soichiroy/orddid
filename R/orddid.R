@@ -21,6 +21,7 @@
 #'             which contains parameter estimates and predicted probabilities for each category.}
 #' \item{boot_params}{A list with all objects generated during the bootstrap step.}
 #' @examples
+#'\dontrun{
 #' ## load packages
 #' library(orddid)
 #' library(dplyr)
@@ -47,7 +48,7 @@
 #'
 #' ## cumulative effects
 #' summary(fit)
-#'
+#' }
 #' @export
 ord_did <- function(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
                     n_boot = 500, pre = FALSE, verbose = FALSE) {

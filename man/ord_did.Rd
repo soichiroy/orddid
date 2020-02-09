@@ -39,6 +39,7 @@ This should be \code{TRUE} when the output is supplied to \code{\link{equivalenc
 \code{ord_did()} implements the difference-in-differences for the ordinal outcome.
 }
 \examples{
+\dontrun{
 ## load packages
 library(orddid)
 library(dplyr)
@@ -65,5 +66,5 @@ summary(fit, cumulative = FALSE)
 
 ## cumulative effects
 summary(fit)
-
+}
 }
