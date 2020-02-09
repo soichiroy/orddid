@@ -1,6 +1,6 @@
 Package: orddid
 Title: Difference-in-Differences Design for Ordinal Outcome
-Version: 0.0.2
+Version: 0.1.0
 Authors@R:
     person(given = "Soichiro",
            family = "Yamauchi",
