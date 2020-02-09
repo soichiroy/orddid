@@ -7,6 +7,8 @@
 
 [![Travis build
 status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
+[![Codecov test
+coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)](https://codecov.io/gh/soichiroy/orddid?branch=master)
 <!-- badges: end -->
 
   - Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
@@ -22,7 +24,6 @@ install_github("soichiroy/orddid", dependencies=TRUE)
 ```
 
 ## Example: Two Time Periods
-
 
 ``` r
 ## Estimate causal effects
@@ -40,18 +41,18 @@ fit <- ord_did(
 ## view summary of the output 
 ## non-cumulative effects
 summary(fit, cumulative = FALSE)
-#> ── Effect Estimates ──────────────────────────────────────────────────
+#> ── Effect Estimates ────────────────────────────────────────────────────
 #>           Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
-#> zeta[1]  0.00559 0.00476  -0.00237   0.01233  -0.00544   0.01365
-#> zeta[2] -0.00991 0.00716  -0.02138   0.00119  -0.02282   0.00404
-#> zeta[3]  0.00432 0.00634  -0.00590   0.01536  -0.00882   0.01647
+#> zeta[1]  0.00559 0.00485  -0.00252   0.01314  -0.00347   0.01426
+#> zeta[2] -0.00991 0.00775  -0.02245   0.00276  -0.02400   0.00421
+#> zeta[3]  0.00432 0.00611  -0.00587   0.01301  -0.00687   0.01459
 
 ## cumulative effects
 summary(fit)
-#> ── Effect Estimates ──────────────────────────────────────────────────
+#> ── Effect Estimates ────────────────────────────────────────────────────
 #>              Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
-#> Delta[2-3] -0.00559 0.00476   -0.0123   0.00237  -0.01365   0.00544
-#> Delta[3]    0.00432 0.00634   -0.0059   0.01536  -0.00882   0.01647
+#> Delta[2-3] -0.00559 0.00485  -0.01314   0.00252  -0.01426   0.00347
+#> Delta[3]    0.00432 0.00611  -0.00587   0.01301  -0.00687   0.01459
 ```
 
 ## Example: Additional Pre-treatment Period is Available
@@ -108,11 +109,11 @@ equiv_test <- equivalence_test(
 
 ## view result
 summary(equiv_test)
-#> ── Equivalence Test ──────────────────────────────────────────────────
+#> ── Equivalence Test ────────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>         0.02033        -0.03847         0.02321         0.00102 
+#>        0.020332       -0.036161        0.021196        0.000204 
 #> 
-#> [1] H0 of no-equivalence is REJECTED with threshold 0.054
+#> [1] H0 of non-equivalence is REJECTED with threshold 0.054
 
 ## plot result
 plot(equiv_test, ylim = c(-0.1, 0.1), fill = FALSE)
@@ -129,9 +130,9 @@ equiv_test2 <- equivalence_test(
 
 ## view result
 summary(equiv_test2)
-#> ── Equivalence Test ──────────────────────────────────────────────────
+#> ── Equivalence Test ────────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>          0.0203         -0.0385          0.0232          0.8267 
+#>          0.0203         -0.0362          0.0212          0.8589 
 #> 
-#> [1] H0 of no-equivalence is NOT REJECTED with threshold 0.01
+#> [1] H0 of non-equivalence is NOT REJECTED with threshold 0.01
 ```

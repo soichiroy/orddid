@@ -7,5 +7,6 @@ latex: false
 env:
   global:
     - R_CHECK_ARGS="--no-build-vignettes"
-
+after_success:
+    - Rscript -e 'covr::codecov()'
 
