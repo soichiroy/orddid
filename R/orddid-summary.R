@@ -1,6 +1,6 @@
 
 #' Summary function
-#' @param obj an output object from \link{\code{orddid}} or \link{\code{equivalence_test}}.
+#' @param obj an output object from \code{orddid} or \code{equivalence_test}.
 #' @param cumulative Default is \code{TRUE}. Only effective for displaying the causal effects.
 #'  If \code{TRUE}, cumulative effect is presented.
 #' @export
