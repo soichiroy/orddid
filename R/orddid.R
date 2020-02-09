@@ -1,7 +1,7 @@
 
 #' Ordinal Difference-in-Differences for Panel Data
 #'
-#' A function to implement Ordinal Difference-in-Differences method.
+#' A function to implement the difference-in-differences for the ordinal outcome.
 #'
 #' @param Ynew a vector of outcome for the post-treatment period.
 #' @param Yold a vector of outcome for the pre-treatment period.

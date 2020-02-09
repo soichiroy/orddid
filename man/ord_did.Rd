@@ -29,5 +29,5 @@ If left \code{NULL}, bootstrap is blocked at the individaul level}
 A list
 }
 \description{
-A function to implement Ordinal Difference-in-Differences method.
+A function to implement the difference-in-differences for the ordinal outcome.
 }
