@@ -5,6 +5,8 @@
 
 <!-- badges: start -->
 
+[![Travis build
+status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
 <!-- badges: end -->
 
   - Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
@@ -58,14 +60,14 @@ fit <- ord_did(
 
 ## view summary
 summary(fit)
-#> ── Effect Estimates ─────────────────────────────────────────────────────────────────────────
+#> ── Effect Estimates ────────────────────────────────────────────────────
 #>              Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
 #> Delta[2-3] -0.00562 0.00485  -0.01314   0.00253  -0.01426    0.0035
 #> Delta[3]    0.00431 0.00610  -0.00589   0.01302  -0.00679    0.0146
 
 ## non-cumulative effect
 summary(fit, cumulative = FALSE)
-#> ── Effect Estimates ─────────────────────────────────────────────────────────────────────────
+#> ── Effect Estimates ────────────────────────────────────────────────────
 #>            Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
 #> Delta[1]  0.00562 0.00485  -0.00253   0.01314  -0.00350   0.01426
 #> Delta[2] -0.00993 0.00775  -0.02247   0.00277  -0.02401   0.00422
@@ -126,7 +128,7 @@ equiv_test <- equivalence_test(
 
 ## view result
 summary(equiv_test)
-#> ── Equivalence Test ─────────────────────────────────────────────────────────────────────────
+#> ── Equivalence Test ────────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
 #>        0.020332       -0.036161        0.021210        0.000204 
 #> 
@@ -147,7 +149,7 @@ equiv_test2 <- equivalence_test(
 
 ## view result
 summary(equiv_test2)
-#> ── Equivalence Test ─────────────────────────────────────────────────────────────────────────
+#> ── Equivalence Test ────────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
 #>          0.0203         -0.0362          0.0212          0.8589 
 #> 
