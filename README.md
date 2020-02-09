@@ -23,7 +23,6 @@ install_github("soichiroy/orddid", dependencies=TRUE)
 
 ## Example: Two Time Periods
 
-This is a basic example which shows you how to solve a common problem:
 
 ``` r
 ## Estimate causal effects

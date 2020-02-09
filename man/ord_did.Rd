@@ -28,7 +28,7 @@ This should be \code{TRUE} when the output is supplied to \code{\link{equivalenc
 \item{verbose}{If \code{TRUE}, print the progress of bootstrap iterations.}
 }
 \value{
-\code{ord_did} returns a list of class `orddid' containing the following components:
+\code{ord_did()} returns a list of class `orddid' containing the following components:
 \item{fit}{A list with the output of the ordinal DID estimators, 
            which contains parameter estimates and predicted probabilities for each category.}
 \item{boot}{A list with the output of bootstraps,
@@ -36,5 +36,34 @@ This should be \code{TRUE} when the output is supplied to \code{\link{equivalenc
 \item{boot_params}{A list with all objects generated during the bootstrap step.}
 }
 \description{
-A function to implement the difference-in-differences for the ordinal outcome.
+\code{ord_did()} implements the difference-in-differences for the ordinal outcome.
+}
+\examples{
+## load packages 
+library(orddid)
+library(dplyr)
+
+## load example data
+data("gun_twowave")
+
+## run 
+## fit the ordinal DID 
+set.seed(1234)
+fit <- ord_did(
+  Ynew = gun_twowave \%>\% filter(year == 2012) \%>\% pull(guns),
+  Yold = gun_twowave \%>\% filter(year == 2010) \%>\% pull(guns),
+  treat = gun_twowave \%>\% filter(year == 2012) \%>\% pull(treat_100mi),
+  id_cluster = gun_twowave \%>\% filter(year == 2010) \%>\% pull(reszip),
+  n_boot = 10,
+  pre = FALSE,
+  verbose = FALSE
+)
+
+## view summary of the output 
+## non-cumulative effects
+summary(fit, cumulative = FALSE)
+
+## cumulative effects
+summary(fit)
+
 }
