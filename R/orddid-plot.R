@@ -1,5 +1,11 @@
-# Plot Equivalence Test
+#' Visualizing the result of equivalence_test()
 #'
+#' \code{plot.orddid.test} generates a plot that visualize the result of \code{\link{equivalence_test}}.
+#'
+#' @param obj An output from \code{equivalence_test()}. 
+#' @param ylim Range of y-axis of the plot.
+#' @param fill A boolean argument; if \code{TRUE}, confidence band is filled by a polygon.
+#' @param ... Other arguments passed to \code{plot()} function.
 #' @export
 plot.orddid.test <- function(obj, ylim, fill = TRUE, ...) {
   ## extract infor

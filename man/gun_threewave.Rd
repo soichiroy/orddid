@@ -3,18 +3,40 @@
 \docType{data}
 \name{gun_threewave}
 \alias{gun_threewave}
-\title{Three-wave Panel from Barney and Schaffner (2019)}
-\format{An object of class \code{spec_tbl_df} (inherits from \code{tbl_df}, \code{tbl}, \code{data.frame}) with 23832 rows and 11 columns.}
+\title{Three-wave panel from Barney and Schaffner (2019)}
+\format{An object of class spec_tbl_df (inherits from tbl_df, tbl, data.frame) with 23832 rows and 11 columns.}
+\source{
+Barney, David; Schaffner, Brian. 
+ ``Replication Data for: Reexamining the Effect of Mass Shootings on Public Support for Gun Control.''
+ \url{https://doi.org/10.7910/DVN/YJQIXP}, Harvard Dataverse, V1, 2018.
+
+Schaffner, Brian; Ansolabehere, Stephen.
+ ``2010-2014 Cooperative Congressional Election Study Panel Survey.''
+ \url{https://doi.org/10.7910/DVN/TOE8I1}, Harvard Dataverse, V11, 2015.
+}
 \usage{
 gun_threewave
 }
 \description{
-Three-wave Panel from Barney and Schaffner (2019)
+\code{gun_threewave} is a part of the replication data from Barney and Schaffner (2019).
+The data set is constructed combining the three-wave panel from the Cooperative Congressional Election Study (CCES) 2010-12-14 study 
+ with the mass shooting data originally analyzed by Newman and Hartman (2019).
+}
+\examples{
+ require(dplyr)
+ require(haven)
+ data("gun_threewave")
+ gun_threewave
 }
 \references{
 Barney, David J., and Brian F. Schaffner. 
  "Reexamining the Effect of Mass Shootings on Public Support for Gun Control." 
   British Journal of Political Science 49.4 (2019): 1555-1565. 
   \url{https://doi.org/10.1017/S0007123418000352}.
+
+Newman, B. J. and Hartman, T. K.
+ ``Mass shootings and public support for gun control.''
+ British Journal of Political Science, 49.4 (2019): 1527–1553.
+ \url{https://doi.org/10.1017/S0007123417000333}.
 }
 \keyword{dataset}
