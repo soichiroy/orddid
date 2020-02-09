@@ -12,7 +12,7 @@ ord_did(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
 
 \item{Yold}{A numeric vector of ordinal outcome for the pre-treatment period.}
 
-\item{treat}{A numeric vector of treatment indicator. 
+\item{treat}{A numeric vector of treatment indicator.
 The treatment group should take 1 and the control group should take 0.}
 
 \item{id_cluster}{A vector of cluster id.
@@ -29,7 +29,7 @@ This should be \code{TRUE} when the output is supplied to \code{\link{equivalenc
 }
 \value{
 \code{ord_did()} returns a list of class `orddid' containing the following components:
-\item{fit}{A list with the output of the ordinal DID estimators, 
+\item{fit}{A list with the output of the ordinal DID estimators,
            which contains parameter estimates and predicted probabilities for each category.}
 \item{boot}{A list with the output of bootstraps,
             which contains parameter estimates and predicted probabilities for each category.}
@@ -39,15 +39,15 @@ This should be \code{TRUE} when the output is supplied to \code{\link{equivalenc
 \code{ord_did()} implements the difference-in-differences for the ordinal outcome.
 }
 \examples{
-## load packages 
+## load packages
 library(orddid)
 library(dplyr)
 
 ## load example data
 data("gun_twowave")
 
-## run 
-## fit the ordinal DID 
+## run
+## fit the ordinal DID
 set.seed(1234)
 fit <- ord_did(
   Ynew = gun_twowave \%>\% filter(year == 2012) \%>\% pull(guns),
@@ -59,7 +59,7 @@ fit <- ord_did(
   verbose = FALSE
 )
 
-## view summary of the output 
+## view summary of the output
 ## non-cumulative effects
 summary(fit, cumulative = FALSE)
 

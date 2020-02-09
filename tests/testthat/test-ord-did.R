@@ -128,3 +128,23 @@ test_that("some effect (J = 4)", {
   expect_lte(abs(bias_sd11), 0.01)
   expect_lte(abs(bias_Y0), 0.01)
 })
+
+
+
+test_that("orddid input check", {
+  ## different length
+  set.seed(1234)
+  Y1 <- sample(1:3, size = 1001, replace = TRUE)
+  Y0 <- sample(1:3, size = 1000, replace = TRUE)
+  treat <- sample(0:1, size = 1000, replace = TRUE)
+
+  expect_error(ord_did(Y1, Y0, treat, n_boot = 2))
+
+  ## differnt length of id_cluster
+  set.seed(1234)
+  Y1 <- sample(1:3, size = 2000, replace = TRUE)
+  Y0 <- sample(1:3, size = 2000, replace = TRUE)
+  treat <- sample(0:1, size = 2000, replace = TRUE)
+  cluster <- sample(1:4, size = 1000, replace = TRUE)
+  expect_error(ord_did(Y1, Y0, treat, cluster, n_boot = 2))
+})
