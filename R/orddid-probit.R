@@ -113,14 +113,15 @@ log_like_probit_group <- function(par, Y, cut, id_group) {
     mu_g <- mu[g];
     ss_g <- ss[g]
     item  <- 1
-
+    Yg <- Y[id_group == g]
+    
     ## evaluate ll function
-    nj   <- sum(Y[id_group == g] == j_min)
+    nj   <- sum(Yg == j_min)
     ll   <- ll + nj * log(pnorm((cut[item] - mu_g) / ss_g))
     item <- item + 1
 
     for (j in (j_min+1):(j_max-1)) {
-      nj <- sum(Y[id_group == g] == j)
+      nj <- sum(Yg == j)
       ll <- ll + nj * log(
         pnorm((cut[item] - mu_g) / ss_g) -
         pnorm((cut[item-1] - mu_g) / ss_g)
@@ -128,7 +129,7 @@ log_like_probit_group <- function(par, Y, cut, id_group) {
       item <- item + 1
     }
 
-    nj <- sum(Y[id_group == g] == j_max)
+    nj <- sum(Yg == j_max)
     ll <- ll + nj * log(1 - pnorm((max(cut) - mu_g) / ss_g))
   }
 
