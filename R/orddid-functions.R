@@ -5,101 +5,61 @@
 #
 #
 
-#' Log-likelihood Function
-#' @keywords internal
-log_like_probit <- function(par, Y, cut) {
-  ## prep parameters
-  mu    <- par[1]
-  ss    <- exp(par[2])
-  j_min <- min(Y)
-  j_max <- max(Y)
-  item  <- 1
-  ll    <- 0
-
-  ## evalute the likelihood
-  nj   <- sum(Y == j_min)
-  ll   <- nj * log(pnorm((cut[item] - mu)/ss))
-  item <- item + 1
-
-  for (j in (j_min+1):(j_max-1)) {
-    nj <- sum(Y == j)
-    ll <- ll + nj * log(
-      pnorm((cut[item] - mu) / ss) -
-      pnorm((cut[item-1] - mu) / ss)
-    )
-    item <- item + 1
-  }
-
-  nj <- sum(Y == j_max)
-  ll <- ll + nj * log(1 - pnorm((max(cut) - mu) / ss))
-
-  return(-ll)
-}
-
-#' Probit Regression
+#' Parameter Estimation for the Counterfactual Outcome
 #'
-#' Fitting ordered probit regression
-#' @keywords internal
-fit_ord_probit <- function(Y, init = NULL, cut) {
-  if (is.null(init)) par_init <- c(0.1, 1)
-  fit <- optim(
-    par = par_init, fn = log_like_probit,
-    Y = Y, cut = cut, method = 'BFGS')
-  return(list(mu = fit$par[1], sd = exp(fit$par[2]), ll = fit$value))
-}
-
-
-
-#' Parameter Estimation
-#'
-#' Fitting probit model for each period
 #' @keywords internal
 ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
+  ## input check
+  ord_did_check_input(Ynew, Yold, treat)
+  dat <- create_group_dummy(Ynew, Yold, treat, pre = pre)
 
-  ## fit four probit
-  ## Y[d = 0, t = 0]
-  fit00 <- fit_ord_probit( Y = Yold[treat == 0], cut = cut )
-  ## Y[d = 0, t = 1]
-  fit01 <- fit_ord_probit( Y = Ynew[treat == 0], cut = cut )
-  ## Y[d = 1, t = 0]
-  fit10 <- fit_ord_probit( Y = Yold[treat == 1], cut = cut )
-  # observed Y[t=1,d=1]
-  fit_tr <- fit_ord_probit( Y = Ynew[treat == 1], cut = cut )
+  ## fit probit regression
 
-  ## estimate counter factual distribution
+  fit_ct <- fit_ord_probit_gr(Y = dat$Y, id_group = dat$id_group, cut = cut)
+  fit_tr <- fit_ord_probit(Y = Ynew[treat == 1], cut = cut)
+
   if (isTRUE(pre)) {
-    ## this is pre-treatment so fit_tr has mu11 and sd11
-    mu11 <- fit_tr$mu
-    ss11 <- fit_tr$sd
+    ## fit_ct incldus "post-treatment x treatment" if pre = TRUE
+    mu11 <- fit_ct$mu[4]
+    ss11 <- fit_ct$sd[4]
   } else {
-    ## use the identification formula to recover counter-factual parameters
-    mu11 <- fit10$mu + (fit01$mu - fit00$mu) *
-            (fit10$sd / fit00$sd)
-    ss11 <- fit10$sd * fit01$sd / fit00$sd
+    ## estimated params
+    mu00 <- fit_ct$mu[1]; mu01 <- fit_ct$mu[2]; mu10 <- fit_ct$mu[3]
+    sd00 <- fit_ct$sd[1]; sd01 <- fit_ct$sd[2]; sd10 <- fit_ct$sd[3]
+
+    ## identify mean and variance of Y11
+    mu11 <- mu10 + (mu01 - mu00) * (sd10 / sd00)
+    ss11 <- sd10 * sd01 / sd00
   }
 
-  ## compute the probability
-  cut_new <- c(-Inf, cut, Inf)
-  Ypred <- rep(NA, (length(cut)+1))
-  for (j in 1:(length(cut)+1)) {
+  ##
+  ## compute the probability Pr(Y(0) = j | D = 1)
+  ##
+  cuotff <- fit_ct$cutoff
+  cut_new <- c(-Inf, cuotff, Inf)
+  Ypred <- rep(NA, (length(cuotff)+1))
+  for (j in 1:(length(cuotff)+1)) {
     Ypred[j] <- pnorm(cut_new[j+1], mean = mu11, sd = ss11)  -
                 pnorm(cut_new[j], mean = mu11, sd = ss11)
   }
 
-  ## compute observed Pr(Y(1) = j | D)
+  ##
+  ## compute observed Pr(Y(1) = j | D = 1)
+  ##
   Yobs <- as.vector(prop.table(table(Ynew[treat==1])))
 
+  ##
   ## estimatd parameters
+  ##
   theta_est <- list(
-    mu00 = fit00$mu, sd00 = fit00$sd,
-    mu01 = fit01$mu, sd01 = fit01$sd,
-    mu10 = fit10$mu, sd10 = fit10$sd,
+    mu00 = mu00, sd00 = sd00,
+    mu01 = mu01, sd01 = sd01,
+    mu10 = mu10, sd10 = sd10,
     mu11 = mu11, sd11 = ss11
   )
 
   return(list("Y1" = Yobs, "Y0" = Ypred, 'mu11' = mu11, 'ss11' = ss11,
-    fit00 = fit00, fit01 = fit01, fit10 = fit10, fit_tr = fit_tr,
-    theta = theta_est
+    fit_ct = fit_ct, fit_tr = fit_tr, theta = theta_est
   ))
 }
 
@@ -126,59 +86,61 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
     id_cluster <- as.numeric(as.factor(id_cluster))
   }
 
-  ## assuming panel structure
-  ## this check is minimum
-  if (length(Ynew) == length(Yold)) {
-    # define an iterator
-    b <- 1
 
-    # reject the bootstrap replica when optimization fails
-    # typically rejection happens when outcome is not
-    dat_tmp <- cbind(Ynew, Yold, treat)
+  ##
+  ## setup for bootstrap
+  ##
+  # define an iterator
+  b <- 1
 
-    while(b <= n_boot) {
-      tryCatch({
-        # sample bootstrap index
-        dat_boot <- block_sample(dat_tmp, id_cluster)
+  # reject the bootstrap replica when optimization fails
+  # typically rejection happens when outcome is not
+  dat_tmp <- cbind(Ynew, Yold, treat)
 
-        # fit the model
-        fit_tmp <- ord_did_run(
-          Ynew  = dat_boot[, 1],
-          Yold  = dat_boot[ ,2],
-          treat = dat_boot[, 3],
-          cut   = cut
-        )
+  ## bootstrap -----------------------------------------------------------
+  while(b <= n_boot) {
+    tryCatch({
+      # sample bootstrap index
+      dat_boot <- block_sample(dat_tmp, id_cluster)
 
-        # save
-        boot_save[[1]][b,]    <- fit_tmp$Y1  # Yobs
-        boot_save[[2]][b,]    <- fit_tmp$Y0  # Y(0)
-        boot_save[[3]][b]     <- fit_tmp$mu11
-        boot_save[[4]][b]     <- fit_tmp$ss11
-        boot_params_save[[b]] <- unlist(fit_tmp$theta)
+      # fit the model
+      fit_tmp <- ord_did_run(
+        Ynew  = dat_boot[, 1],
+        Yold  = dat_boot[ ,2],
+        treat = dat_boot[, 3],
+        cut   = cut
+      )
 
-        # update iterator
-        b <- b + 1
-      }, error = function(e) {
-        NULL
-      })
+      # save estimates
+      boot_save[[1]][b,]    <- fit_tmp$Y1  # Yobs
+      boot_save[[2]][b,]    <- fit_tmp$Y0  # Y(0)
+      boot_save[[3]][b]     <- fit_tmp$mu11
+      boot_save[[4]][b]     <- fit_tmp$ss11
+      boot_params_save[[b]] <- unlist(fit_tmp$theta)
 
-      ## verbose
-      if (isTRUE(verbose)) {
-        if ((b %% iter_show) == 0) {
-            cat('\r', b, "out of", n_boot, "bootstrap iterations")
-            flush.console()
-        }
+      # update iterator
+      b <- b + 1
+    }, error = function(e) {
+      NULL
+    })
+
+    ## verbose ----------------------------------------------------
+    if (isTRUE(verbose)) {
+      if ((b %% iter_show) == 0) {
+          cat('\r', b, "out of", n_boot, "bootstrap iterations")
+          flush.console()
       }
-
     }
+    ## end of verbose ---------------------------------------------
 
-    # clear the console
-    cat("\n")
-    # concatenate all params
-    boot_params <- do.call("rbind", boot_params_save)
-  } else {
-    stop('length of two outcomes does not match')
   }
+  ## end of bootstrap iterations -----------------------------------------
+
+  # clear the console
+  cat("\n")
+
+  # concatenate all params
+  boot_params <- do.call("rbind", boot_params_save)
 
   return(list("boot_params" = boot_params, "boot_save" = boot_save))
 }
@@ -199,7 +161,7 @@ block_sample <- function(dat, id_cluster) {
     id_unique <- unique(id_cluster)   # unique cluster id
     J         <- length(id_unique)    # number of clusters
 
-    # sample cluster id & data 
+    # sample cluster id & data
     id_cluster_boot <- sample(id_unique, size = J, replace = TRUE)
     dat_boot <- dat_block_boot(dat = dat, id_cluster = id_cluster,
       id_cluster_boot = id_cluster_boot, max_cluster_size = max(table(id_cluster))
