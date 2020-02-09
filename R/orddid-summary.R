@@ -119,7 +119,7 @@ summarise_equivalence_test <- function(obj) {
   )
 
   test_message <- paste(
-    "H0 of no-equivalence is",
+    "H0 of non-equivalence is",
     ifelse(obj$reject, "REJECTED", "NOT REJECTED"),
     "with threshold",
     round(attr(obj, 'threshold'), 3)
