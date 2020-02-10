@@ -95,12 +95,22 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
   # reject the bootstrap replica when optimization fails
   # typically rejection happens when outcome is not
   dat_tmp <- cbind(Ynew, Yold, treat)
+  if (!is.null(id_cluster)) {
+    id_unique <- unique(id_cluster)   # unique cluster id
+    J         <- length(id_unique)    # number of clusters
+    max_cluster_size <- max(table(id_cluster))
+  }
 
   ## bootstrap -----------------------------------------------------------
   while(b <= n_boot) {
     tryCatch({
       # sample bootstrap index
-      dat_boot <- block_sample(dat_tmp, id_cluster)
+      if (is.null(id_cluster)) {
+        dat_boot <- block_unit_sample(dat_tmp)
+      } else {
+        dat_boot <- block_sample(dat_tmp, id_cluster, id_unique, J, max_cluster_size)
+      }
+
 
       # fit the model
       fit_tmp <- ord_did_run(
@@ -152,20 +162,19 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
 #' @param id_cluster a cluster id vector of length n.
 #' @return a list of resampled data.
 #' @keywords internal
-block_sample <- function(dat, id_cluster) {
-  if (is.null(id_cluster)) {
-    idx_use  <- sample(1:nrow(dat), size = nrow(dat), replace = TRUE)
-    dat_boot <- dat[idx_use, ]
-  } else {
-    id_unique <- unique(id_cluster)   # unique cluster id
-    J         <- length(id_unique)    # number of clusters
+block_sample <- function(dat, id_cluster, id_unique, J, max_cluster_size) {
+  # sample cluster id & data
+  id_cluster_boot <- sample(id_unique, size = J, replace = TRUE)
+  dat_boot <- dat_block_boot(dat = dat, id_cluster = id_cluster,
+    id_cluster_boot = id_cluster_boot, max_cluster_size = max_cluster_size)
+  return(dat_boot)
+}
 
-    # sample cluster id & data
-    id_cluster_boot <- sample(id_unique, size = J, replace = TRUE)
-    dat_boot <- dat_block_boot(dat = dat, id_cluster = id_cluster,
-      id_cluster_boot = id_cluster_boot, max_cluster_size = max(table(id_cluster))
-    )
-  }
 
+#' Unit level block bootstrap
+#' @keywords internal
+block_unit_sample <- function(dat) {
+  idx_use  <- sample(1:nrow(dat), size = nrow(dat), replace = TRUE)
+  dat_boot <- dat[idx_use, ]
   return(dat_boot)
 }
