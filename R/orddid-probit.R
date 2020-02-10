@@ -154,18 +154,7 @@ fit_ord_probit_gr <- function(Y, id_group, init = NULL, cut) {
   }
 
   ## intput prep; count statistics ------------------------
-  n_gj <- matrix(0, nrow = n_group, ncol = n_cat)
-  for (g in 1:3) {
-    item <- 1
-    Yg <- Y[id_group == g]
-    n_gj[g,item] <- sum(Yg == j_min)
-    item <- item + 1
-    for (j in (j_min+1):(j_max-1)) {
-      n_gj[g, item] <- sum(Yg == j)
-      item <- item + 1
-    }
-    n_gj[g,item] <- sum(Yg == j_max)
-  }
+  n_gj <- count_nj(Y, id_group, n_group, n_cat, j_max, j_min)
 
   ## fit ordered probit -----------------------------------
   fit <- optim(
@@ -181,4 +170,24 @@ fit_ord_probit_gr <- function(Y, id_group, init = NULL, cut) {
   sd_vec <- fit$par[(n_group+1):(2*n_group)]
 
   return(list(mu = mu_vec, sd = exp(sd_vec), cutoff = cutoff, ll = fit$value))
+}
+
+
+#' Counting category selections by groups
+#' @keywords internal
+count_nj <- function(Y, id_group, n_group, n_cat, j_max, j_min) {
+  n_gj <- matrix(0, nrow = n_group, ncol = n_cat)
+  for (g in 1:n_group) {
+    item <- 1
+    Yg <- Y[id_group == g]
+    n_gj[g,item] <- sum(Yg == j_min)
+    item <- item + 1
+    for (j in (j_min+1):(j_max-1)) {
+      n_gj[g, item] <- sum(Yg == j)
+      item <- item + 1
+    }
+    n_gj[g,item] <- sum(Yg == j_max)
+  }
+
+  return(n_gj)
 }
