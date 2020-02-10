@@ -13,6 +13,8 @@ coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)]
 <!-- badges: end -->
 
   - Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
+  - Package manual:
+    [PDF](https://soichiroy.github.io/files/packages/orddid_0_1_0.pdf)
 
 ## Installation Instructions
 

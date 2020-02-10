@@ -91,9 +91,7 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
   ##
   # define an iterator
   b <- 1
-
-  # reject the bootstrap replica when optimization fails
-  # typically rejection happens when outcome is not
+  # prep data
   dat_tmp <- cbind(Ynew, Yold, treat)
   if (!is.null(id_cluster)) {
     id_unique <- unique(id_cluster)   # unique cluster id
@@ -102,6 +100,8 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
   }
 
   ## bootstrap -----------------------------------------------------------
+  # reject the bootstrap replica when optimization fails
+  # typically rejection happens when outcome is not well balanced
   while(b <= n_boot) {
     tryCatch({
       # sample bootstrap index
