@@ -25,6 +25,11 @@ arma::mat dat_block_boot(
   arma::mat dat_out = arma::mat(n_max, 3);
 
   int n_used = 0;
+  #ifdef _OPENMP
+    int threads = omp_get_max_threads() - 1;
+    omp_set_num_threads(threads);
+  #pragma omp parallel for
+  #endif
   for (int i = 0; i < id_cluster_boot.n_elem; i++) {
     arma::uvec id_use = arma::find(id_cluster == id_cluster_boot(i));
     int n_add = id_use.n_elem;
