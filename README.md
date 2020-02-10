@@ -5,6 +5,7 @@
 
 <!-- badges: start -->
 
+[![](https://img.shields.io/badge/devel%20version-0.1.0-blue.svg)](https://github.com/soichiroy/orddid)
 [![Travis build
 status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
 [![Codecov test
