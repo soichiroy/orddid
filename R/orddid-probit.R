@@ -77,13 +77,9 @@ fit_ord_probit <- function(Y, init = NULL, cut) {
   return(list(mu = fit$par[1], sd = exp(fit$par[2]), ll = fit$value, cutoff = cutoff))
 }
 
-
-
 ## --------------------------------------------------------------- ##
 ##               Probit Regression with Group Dummies              ##
 ## --------------------------------------------------------------- ##
-
-
 #' Log-likelihood Function
 #'
 #' @param par A vector of parameters.
@@ -92,13 +88,11 @@ fit_ord_probit <- function(Y, init = NULL, cut) {
 #' @param cut A set of two cutoffs fixed for identification. Default is \code{cut = c(0, 1)}.
 #' @param id_group A vector of group indicator.
 #' @keywords internal
-log_like_probit_group <- function(par, Y, cut, id_group) {
+log_like_probit_group <- function(par, Y, cut, id_group, n_group, n_gj, j_min, j_max) {
   ## prep parameters
-  n_group <- length(unique(id_group))
-  mu    <- par[1:n_group]
-  ss    <- exp(par[(n_group+1):(n_group*2)])
-  j_min <- min(Y)
-  j_max <- max(Y)
+  # n_group <- length(unique(id_group))
+  mu <- par[1:n_group]
+  ss <- exp(par[(n_group+1):(n_group*2)])
 
   ## if the number of categories is more than 4,
   ## we estimate cutoff
@@ -107,30 +101,29 @@ log_like_probit_group <- function(par, Y, cut, id_group) {
   }
 
   ## evalute the likelihood
-  ll    <- 0
+  ll <- 0
   for (g in 1:n_group) {
     ## get group params
     mu_g <- mu[g];
     ss_g <- ss[g]
     item  <- 1
-    Yg <- Y[id_group == g]
-    
+
     ## evaluate ll function
-    nj   <- sum(Yg == j_min)
-    ll   <- ll + nj * log(pnorm((cut[item] - mu_g) / ss_g))
+    nj   <- n_gj[g, item]
+    ll   <- ll + nj * log(pnorm(cut[item], mean = mu_g, sd = ss_g))
     item <- item + 1
 
     for (j in (j_min+1):(j_max-1)) {
-      nj <- sum(Yg == j)
+      nj <- n_gj[g, item]
       ll <- ll + nj * log(
-        pnorm((cut[item] - mu_g) / ss_g) -
-        pnorm((cut[item-1] - mu_g) / ss_g)
+        pnorm(cut[item], mean = mu_g, sd = ss_g) -
+        pnorm(cut[item-1], mean = mu_g, sd = ss_g)
       )
       item <- item + 1
     }
 
-    nj <- sum(Yg == j_max)
-    ll <- ll + nj * log(1 - pnorm((max(cut) - mu_g) / ss_g))
+    nj <- n_gj[g, item]
+    ll <- ll + nj * log(1 - pnorm(max(cut), mean = mu_g, sd = ss_g))
   }
 
   return(-ll)
@@ -145,12 +138,14 @@ fit_ord_probit_gr <- function(Y, id_group, init = NULL, cut) {
   ## input check
   ord_probit_check_cat(Y)
   n_group <- length(unique(id_group))
+  j_min <- min(Y)
+  j_max <- max(Y)
+  n_cat <- (j_max - j_min) + 1
 
-  ## initial value setup
+  ## initial value setup ----------------------------------
   if (is.null(init)) {
     par_init <- c(rep(0.1, n_group), rep(0.5, n_group))
     ## initialize cutoff
-    n_cat <- (max(Y) - min(Y)) + 1
     if (n_cat > 3) {
       n_cutoffs <- n_cat - 1
       ## first two cutoffs are fixed: default is c(0, 1)
@@ -158,14 +153,29 @@ fit_ord_probit_gr <- function(Y, id_group, init = NULL, cut) {
     }
   }
 
-  ## fit ordered probit
+  ## intput prep; count statistics ------------------------
+  n_gj <- matrix(0, nrow = n_group, ncol = n_cat)
+  for (g in 1:3) {
+    item <- 1
+    Yg <- Y[id_group == g]
+    n_gj[g,item] <- sum(Yg == j_min)
+    item <- item + 1
+    for (j in (j_min+1):(j_max-1)) {
+      n_gj[g, item] <- sum(Yg == j)
+      item <- item + 1
+    }
+    n_gj[g,item] <- sum(Yg == j_max)
+  }
+
+  ## fit ordered probit -----------------------------------
   fit <- optim(
     par = par_init, fn = log_like_probit_group,
-    Y = Y, cut = cut, id_group = id_group,
+    Y = Y, cut = cut, id_group = id_group, n_group = n_group,
+    n_gj = n_gj, j_min = j_min, j_max = j_max,
     method = 'BFGS'
   )
 
-  ## return object
+  ## return object ----------------------------------------
   cutoff <- c(cut, cut[length(cut)] + cumsum(exp(fit$par[-c(1:(n_group*2))])))
   mu_vec <- fit$par[1:n_group]
   sd_vec <- fit$par[(n_group+1):(2*n_group)]

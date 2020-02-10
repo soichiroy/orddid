@@ -2,8 +2,8 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' helper function for the loss computation
-#' 
-#' @useDynLib orddid 
+#'
+#' @useDynLib orddid
 #' @keywords internal
 dat_block_boot <- function(dat, id_cluster, id_cluster_boot, max_cluster_size) {
     .Call('_orddid_dat_block_boot', PACKAGE = 'orddid', dat, id_cluster, id_cluster_boot, max_cluster_size)

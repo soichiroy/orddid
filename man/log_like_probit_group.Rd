@@ -4,7 +4,7 @@
 \alias{log_like_probit_group}
 \title{Log-likelihood Function}
 \usage{
-log_like_probit_group(par, Y, cut, id_group)
+log_like_probit_group(par, Y, cut, id_group, n_group, n_gj, j_min, j_max)
 }
 \arguments{
 \item{par}{A vector of parameters.
