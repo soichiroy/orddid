@@ -56,11 +56,18 @@ ord_did <- function(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
   ## quick input check
   ord_did_check_input(Ynew, Yold, treat, id_cluster, n_boot)
 
+  ## data summary
+  Yc <- c(Ynew, Yold)
+  J  <- length(unique(Yc))
+  n  <- length(treat)
+  n1 <- sum(treat)
+
+
   ## fit on the obs data
   fit <- ord_did_run(Ynew, Yold, treat, cut, pre)
 
   ## bootstrap (assuming a panel)
-  boot <- ord_did_boot(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose)
+  boot <- ord_did_boot(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose)
 
   ## return objects
   return_list <- list(
@@ -68,11 +75,6 @@ ord_did <- function(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
     'boot' = boot$boot_save,
     'boot_params' = boot$boot_params)
 
-  ## data summary
-  Yc <- c(Ynew, Yold)
-  J  <- length(unique(Yc))
-  n  <- length(treat)
-  n1 <- sum(treat)
 
   ## add attributes to the returning object
   attr(return_list, "input")    <- list(n_boot = n_boot, pre = pre, cut = cut)

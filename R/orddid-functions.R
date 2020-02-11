@@ -67,11 +67,11 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
 #'
 #' Conduct a block bootstrap at the unit level to compute variances and CIs
 #' @keywords internal
-ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
+ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose) {
 
   ## create an object to save bootparams
   boot_save <- list()
-  boot_save[[1]] <- boot_save[[2]] <- matrix(NA, nrow = n_boot, ncol = length(cut)+1)
+  boot_save[[1]] <- boot_save[[2]] <- matrix(NA, nrow = n_boot, ncol = J)
   boot_save[[3]] <- boot_save[[4]] <- rep(NA, n_boot)
   boot_params_save <- list()
 
@@ -95,7 +95,6 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
   dat_tmp <- cbind(Ynew, Yold, treat)
   if (!is.null(id_cluster)) {
     id_unique <- unique(id_cluster)   # unique cluster id
-    J         <- length(id_unique)    # number of clusters
     max_cluster_size <- max(table(id_cluster))
   }
 
@@ -129,6 +128,7 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, n_boot, verbose) {
 
       # update iterator
       b <- b + 1
+
     }, error = function(e) {
       NULL
     })
