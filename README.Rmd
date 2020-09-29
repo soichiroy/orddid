@@ -17,6 +17,7 @@ knitr::opts_chunk$set(
 `r badger::badge_devel("soichiroy/orddid", "blue")`
 [![Travis build status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
 [![Codecov test coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)](https://codecov.io/gh/soichiroy/orddid?branch=master)
+[![R build status](https://github.com/soichiroy/orddid/workflows/R-CMD-check/badge.svg)](https://github.com/soichiroy/orddid/actions)
 <!-- badges: end -->
 
 
