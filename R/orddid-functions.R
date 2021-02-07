@@ -67,6 +67,13 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
 #'
 #' Conduct a block bootstrap at the unit level to compute variances and CIs
 #' @keywords internal
+#' @param Ynew A vector of post-treatment observations.
+#' @param Yold A vector of pre-treatment observations.
+#' @param treat A vector of treatment indicator (should be either 0 or 1).
+#' @param id_cluster A vector of clustering index. This should be the same length as \code{treat} vector.
+#' @param J The number of categories.
+#' @param n_boot Number of bootstrap iterations.
+#' @param verbose A boolean argument.
 ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose) {
 
   ## create an object to save bootparams
@@ -95,6 +102,7 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose)
   dat_tmp <- cbind(Ynew, Yold, treat)
   if (!is.null(id_cluster)) {
     id_unique <- unique(id_cluster)   # unique cluster id
+    n_cluster <- length(id_unique)
     max_cluster_size <- max(table(id_cluster))
   }
 
@@ -107,7 +115,8 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose)
       if (is.null(id_cluster)) {
         dat_boot <- block_unit_sample(dat_tmp)
       } else {
-        dat_boot <- block_sample(dat_tmp, id_cluster, id_unique, J, max_cluster_size)
+        dat_boot <- block_sample(dat_tmp, id_cluster, id_unique,
+          n_cluster, max_cluster_size)
       }
 
 
@@ -162,9 +171,9 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose)
 #' @param id_cluster a cluster id vector of length n.
 #' @return a list of resampled data.
 #' @keywords internal
-block_sample <- function(dat, id_cluster, id_unique, J, max_cluster_size) {
+block_sample <- function(dat, id_cluster, id_unique, n_cluster, max_cluster_size) {
   # sample cluster id & data
-  id_cluster_boot <- sample(id_unique, size = J, replace = TRUE)
+  id_cluster_boot <- sample(id_unique, size = n_cluster, replace = TRUE)
   dat_boot <- dat_block_boot(dat = dat, id_cluster = id_cluster,
     id_cluster_boot = id_cluster_boot, max_cluster_size = max_cluster_size)
   return(dat_boot)
