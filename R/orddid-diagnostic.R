@@ -24,7 +24,7 @@
 #'
 #' @param object A fitted object from \code{\link{ord_did}}.
 #' @param alpha The level of a test. This value should take between 0 and 1. Default is 0.05.
-#' @param threshold An equivalance threshold. 
+#' @param threshold An equivalance threshold.
 #'    If left as \code{NULL}, the data-driven threshold, estimated in \code{\link{calc_threshold}}, is used for the test.
 #' @return \code{equivalence_test()} returns a list of class `orddid.test', which contains the following items:
 #'    \item{tv}{A vector of point-wise deviation between q1(v) and q0(v).}
@@ -121,9 +121,9 @@ equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
 #' Selecting the equivalence threshold
 #'
 #' \code{calc_threshold()} computes the data-dependent threshold for the equivalence test.
-#' 
+#'
 #' @param object An object from \code{\link{ord_did}}, where the estimation is based on the pre-treatment data (\code{pre = TRUE}).
-#' @return \code{calc_threshold()} return a value of equivalance threshold, 
+#' @return \code{calc_threshold()} return a value of equivalance threshold,
 #'  which can be supplied to \code{threshold} argument in \code{\link{equivalence_test}}.
 #' @export
 calc_threshold <- function(object, omega = 0.05) {
@@ -228,4 +228,53 @@ tv_gradient <- function(v, theta) {
   )
 
   return(grad)
+}
+
+
+
+
+##
+## Wald test
+##
+
+#' Wald-based Falsification test for the distributional parallel trends assumption
+#' @param object An output from \code{orddid} function.
+#' @param alpha A level of the test.
+#' @export
+wald_test <- function(object, alpha = 0.05) {
+
+  ## obtain estimates
+  vcov  <- cov(na.omit(object$boot_params))
+  theta <- unlist(object$fit$theta)
+
+  ## compute the gradient
+  ## R = ∂r(θ) / ∂θ
+  Rmat <- rbind(
+    c(theta['sd10'] / theta['sd00'], (theta['mu01'] - theta['mu00']) * theta['sd10'] / (theta['sd00'])^2,
+      -theta['sd10'] / theta['sd00'], 0,
+      -1, -(theta['mu01'] - theta['mu00']) / theta['sd00'],
+      1, 0),
+    c(0, theta['sd10'] * theta['sd01'] / (theta['sd00'])^2,
+      0, -theta['sd10'] / theta['sd00'],
+      0, -theta['sd01'] / theta['sd00'],
+      0, 1)
+  )
+
+  ## compute the loss
+  ## H0: r(θ) = 0
+  ##
+  ## r(θ)[1] = μ[11] - μ[10] - (μ[01] - μ[00]) * σ[10] / σ[00]
+  ## r(θ)[2] = σ[11] - σ[10] * σ[01] / σ[00]
+  ##
+  r_theta <- c(
+    theta['mu11'] - theta['mu10'] - (theta['mu01'] - theta['mu00']) * theta['sd10'] / theta['sd00'],
+    theta['sd11'] - theta['sd10'] * theta['sd01'] / theta['sd00']
+  )
+
+  ## compute the test statistic
+  ## W = r(θ)' (RVR)^{-1} r(θ) ---> χ^2_2
+  W <- r_theta %*% solve(Rmat %*% vcov %*% t(Rmat), r_theta)
+
+
+  return(W)
 }
