@@ -11,7 +11,7 @@ equivalence_test(object, alpha = 0.05, threshold = NULL)
 
 \item{alpha}{The level of a test. This value should take between 0 and 1. Default is 0.05.}
 
-\item{threshold}{An equivalance threshold. 
+\item{threshold}{An equivalance threshold.
 If left as \code{NULL}, the data-driven threshold, estimated in \code{\link{calc_threshold}}, is used for the test.}
 }
 \value{

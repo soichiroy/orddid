@@ -125,3 +125,18 @@ equiv_test2 <- equivalence_test(
 ## view result
 summary(equiv_test2)
 ```
+
+
+## Wald-based Test for Pre-treatment Parallel Trends
+
+
+```{r}
+
+## estimate parameters
+fit <- ord_did(Ynew, Yold, treat, zip,
+               n_boot = 100, pre = TRUE, verbose = FALSE)
+
+wald_test(fit)
+
+
+```

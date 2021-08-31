@@ -34,10 +34,10 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
   ##
   ## compute the probability Pr(Y(0) = j | D = 1)
   ##
-  cuotff <- fit_ct$cutoff
-  cut_new <- c(-Inf, cuotff, Inf)
-  Ypred <- rep(NA, (length(cuotff)+1))
-  for (j in 1:(length(cuotff)+1)) {
+  cutoff <- fit_ct$cutoff
+  cut_new <- c(-Inf, cutoff, Inf)
+  Ypred <- rep(NA, (length(cutoff)+1))
+  for (j in 1:(length(cutoff)+1)) {
     Ypred[j] <- pnorm(cut_new[j+1], mean = mu11, sd = ss11)  -
                 pnorm(cut_new[j], mean = mu11, sd = ss11)
   }

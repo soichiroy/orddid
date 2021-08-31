@@ -240,25 +240,37 @@ tv_gradient <- function(v, theta) {
 #' Wald-based Falsification test for the distributional parallel trends assumption
 #' @param object An output from \code{orddid} function.
 #' @param alpha A level of the test.
+#' @importFrom Matrix bdiag
 #' @export
-wald_test <- function(object, alpha = 0.05) {
+wald_test <- function(object) {
+
+  ## number of observations
+  n <- attr(object, "n")
 
   ## obtain estimates
-  vcov  <- cov(na.omit(object$boot_params))
+  vcov  <- cov(object$boot_params)
+  v0    <- vcov[1:4, 1:4]; v1 <- vcov[5:8, 5:8]
+  vcov  <- as.matrix(bdiag(list(v0, v1)))
   theta <- unlist(object$fit$theta)
+  n_cov <- ncol(vcov)
 
   ## compute the gradient
   ## R = ∂r(θ) / ∂θ
-  Rmat <- rbind(
-    c(theta['sd10'] / theta['sd00'], (theta['mu01'] - theta['mu00']) * theta['sd10'] / (theta['sd00'])^2,
-      -theta['sd10'] / theta['sd00'], 0,
-      -1, -(theta['mu01'] - theta['mu00']) / theta['sd00'],
-      1, 0),
-    c(0, theta['sd10'] * theta['sd01'] / (theta['sd00'])^2,
-      0, -theta['sd10'] / theta['sd00'],
-      0, -theta['sd01'] / theta['sd00'],
-      0, 1)
-  )
+  ## - 8 by 2
+  ##
+  ## θ = (μ[00], σ[00], μ[01], σ[01], μ[10], σ[10], μ[11], σ[11])
+  ##
+  R1 <- c(theta['sd10'] / theta['sd00'],
+          (theta['mu01'] - theta['mu00']) * theta['sd10'] / theta['sd00']^2,
+          -theta['sd10'] / theta['sd00'],
+          0, -1,
+          -(theta['mu01'] - theta['mu00']) / theta['sd00'],
+          1, 0)
+  R2 <- c(0, theta['sd10'] * theta['sd01'] / theta['sd00']^2,
+          0, -theta['sd10'] / theta['sd00'],
+          0, -theta['sd01'] / theta['sd00'],
+          0, 1)
+  Rmat <- cbind(R1, R2)
 
   ## compute the loss
   ## H0: r(θ) = 0
@@ -267,14 +279,18 @@ wald_test <- function(object, alpha = 0.05) {
   ## r(θ)[2] = σ[11] - σ[10] * σ[01] / σ[00]
   ##
   r_theta <- c(
-    theta['mu11'] - theta['mu10'] - (theta['mu01'] - theta['mu00']) * theta['sd10'] / theta['sd00'],
+    theta['mu11'] - theta['mu10'] - (theta['mu01'] - theta['mu00']) *
+                                        theta['sd10'] / theta['sd00'],
     theta['sd11'] - theta['sd10'] * theta['sd01'] / theta['sd00']
   )
 
   ## compute the test statistic
-  ## W = r(θ)' (RVR)^{-1} r(θ) ---> χ^2_2
-  W <- r_theta %*% solve(Rmat %*% vcov %*% t(Rmat), r_theta)
+  ## W = r(θ)' (R'VR)^{-1} r(θ) ---> χ^2_2
+  ASA <- t(Rmat) %*% vcov %*% Rmat
+  W <- (r_theta %*% solve(ASA, r_theta))
 
+  ## evaluate the test statistics
+  pval <- 1 - pchisq(W, df = 2)
 
-  return(W)
+  return(list(statistic = W, p_value = pval))
 }

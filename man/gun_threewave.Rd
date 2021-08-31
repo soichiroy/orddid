@@ -4,7 +4,9 @@
 \name{gun_threewave}
 \alias{gun_threewave}
 \title{Three-wave panel from Barney and Schaffner (2019)}
-\format{An object of class spec_tbl_df (inherits from tbl_df, tbl, data.frame) with 23832 rows and 11 columns.}
+\format{
+An object of class spec_tbl_df (inherits from tbl_df, tbl, data.frame) with 23832 rows and 11 columns.
+}
 \source{
 Barney, David; Schaffner, Brian. 
  ``Replication Data for: Reexamining the Effect of Mass Shootings on Public Support for Gun Control.''

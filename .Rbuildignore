@@ -3,3 +3,5 @@
 ^\.travis\.yml$
 ^codecov\.yml$
 ^\.github$
+^.*\.Rproj$
+^\.Rproj\.user$

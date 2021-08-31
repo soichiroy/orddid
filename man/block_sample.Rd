@@ -4,7 +4,7 @@
 \alias{block_sample}
 \title{Block re-sampling for block bootstrap}
 \usage{
-block_sample(dat, id_cluster, id_unique, J, max_cluster_size)
+block_sample(dat, id_cluster, id_unique, n_cluster, max_cluster_size)
 }
 \arguments{
 \item{dat}{a data frame with \code{Ynew}, \code{Yold} and \code{treat}.}

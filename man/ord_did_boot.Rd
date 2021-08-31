@@ -6,6 +6,21 @@
 \usage{
 ord_did_boot(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose)
 }
+\arguments{
+\item{Ynew}{A vector of post-treatment observations.}
+
+\item{Yold}{A vector of pre-treatment observations.}
+
+\item{treat}{A vector of treatment indicator (should be either 0 or 1).}
+
+\item{id_cluster}{A vector of clustering index. This should be the same length as \code{treat} vector.}
+
+\item{J}{The number of categories.}
+
+\item{n_boot}{Number of bootstrap iterations.}
+
+\item{verbose}{A boolean argument.}
+}
 \description{
 Conduct a block bootstrap at the unit level to compute variances and CIs
 }

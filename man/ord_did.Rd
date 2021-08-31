@@ -4,8 +4,16 @@
 \alias{ord_did}
 \title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
-  n_boot = 500, pre = FALSE, verbose = FALSE)
+ord_did(
+  Ynew,
+  Yold,
+  treat,
+  id_cluster = NULL,
+  cut = c(0, 1),
+  n_boot = 500,
+  pre = FALSE,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{Ynew}{A numeric vector of ordinal outcome for the post-treatment period.}
