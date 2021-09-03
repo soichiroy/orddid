@@ -74,7 +74,7 @@ ord_did_run <- function(Ynew, Yold, treat, cut, pre = FALSE) {
 #' @param J The number of categories.
 #' @param n_boot Number of bootstrap iterations.
 #' @param verbose A boolean argument.
-ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose) {
+ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose, pre) {
 
   ## create an object to save bootparams
   boot_save <- list()
@@ -125,7 +125,8 @@ ord_did_boot <- function(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose)
         Ynew  = dat_boot[, 1],
         Yold  = dat_boot[ ,2],
         treat = dat_boot[, 3],
-        cut   = cut
+        cut   = cut,
+        pre   = pre 
       )
 
       # save estimates

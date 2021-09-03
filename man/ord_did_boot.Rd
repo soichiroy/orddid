@@ -4,7 +4,7 @@
 \alias{ord_did_boot}
 \title{Bootstrap function}
 \usage{
-ord_did_boot(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose)
+ord_did_boot(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose, pre)
 }
 \arguments{
 \item{Ynew}{A vector of post-treatment observations.}

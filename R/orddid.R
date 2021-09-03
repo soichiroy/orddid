@@ -67,7 +67,7 @@ ord_did <- function(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
   fit <- ord_did_run(Ynew, Yold, treat, cut, pre)
 
   ## bootstrap (assuming a panel)
-  boot <- ord_did_boot(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose)
+  boot <- ord_did_boot(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose, pre)
 
   ## return objects
   return_list <- list(

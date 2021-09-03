@@ -59,8 +59,8 @@ equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
   vcov  <- cov(object$boot_params)
 
   ## zero out under independent unit assumption
-  v0 <- vcov[1:4, 1:4]; v1 <- vcov[5:8, 5:8]
-  vcov <- as.matrix(bdiag(list(v0, v1)))
+  # v0 <- vcov[1:4, 1:4]; v1 <- vcov[5:8, 5:8]
+  # vcov <- as.matrix(bdiag(list(v0, v1)))
 
 
   ## compute t(v)
