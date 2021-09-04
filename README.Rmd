@@ -106,6 +106,12 @@ zip   <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
 fit <- ord_did(Ynew, Yold, treat, zip,
                n_boot = 100, pre = TRUE, verbose = FALSE)
 
+## wald test 
+wald_test <- wald_test(fit) 
+round(wald_test$p_value, 3)
+
+
+
 ## equivalence test
 equiv_test <- equivalence_test(
   object = fit, alpha = 0.05
@@ -124,19 +130,4 @@ equiv_test2 <- equivalence_test(
 
 ## view result
 summary(equiv_test2)
-```
-
-
-## Wald-based Test for Pre-treatment Parallel Trends
-
-
-```{r}
-
-## estimate parameters
-fit <- ord_did(Ynew, Yold, treat, zip,
-               n_boot = 100, pre = TRUE, verbose = FALSE)
-
-wald_test(fit)
-
-
 ```

@@ -10,6 +10,8 @@
 status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
 [![Codecov test
 coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)](https://codecov.io/gh/soichiroy/orddid?branch=master)
+[![R build
+status](https://github.com/soichiroy/orddid/workflows/R-CMD-check/badge.svg)](https://github.com/soichiroy/orddid/actions)
 <!-- badges: end -->
 
   - Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
@@ -44,7 +46,7 @@ fit <- ord_did(
 ## view summary of the output 
 ## non-cumulative effects
 summary(fit, cumulative = FALSE)
-#> ── Effect Estimates ────────────────────────────────────────────────────
+#> ── Effect Estimates ────────────────────────────────────────────────────────────
 #>           Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
 #> zeta[1]  0.00559 0.00485  -0.00252   0.01314  -0.00347   0.01426
 #> zeta[2] -0.00991 0.00775  -0.02245   0.00276  -0.02400   0.00421
@@ -52,7 +54,7 @@ summary(fit, cumulative = FALSE)
 
 ## cumulative effects
 summary(fit)
-#> ── Effect Estimates ────────────────────────────────────────────────────
+#> ── Effect Estimates ────────────────────────────────────────────────────────────
 #>              Effect      SE 90% Lower 90% Upper 95% Lower 95% Upper
 #> Delta[2-3] -0.00559 0.00485  -0.01314   0.00252  -0.01426   0.00347
 #> Delta[3]    0.00432 0.00611  -0.00587   0.01301  -0.00687   0.01459
@@ -75,6 +77,7 @@ dat_14   <- gun_threewave %>% filter(caseid %in% case_use)
 ## check if subsetting is success full
 ## there should be no one treated until 2014
 dat_14 %>% group_by(year, t_100mi) %>% summarize(n = n())
+#> `summarise()` has grouped output by 'year'. You can override using the `.groups` argument.
 #> # A tibble: 4 x 3
 #> # Groups:   year [3]
 #>    year t_100mi     n
@@ -105,6 +108,14 @@ zip   <- dat_14 %>% filter(caseid %in% case_full & year == 2014) %>%
 fit <- ord_did(Ynew, Yold, treat, zip,
                n_boot = 100, pre = TRUE, verbose = FALSE)
 
+## wald test 
+wald_test <- wald_test(fit) 
+round(wald_test$p_value, 3)
+#>      [,1]
+#> [1,] 0.28
+
+
+
 ## equivalence test
 equiv_test <- equivalence_test(
   object = fit, alpha = 0.05
@@ -112,9 +123,9 @@ equiv_test <- equivalence_test(
 
 ## view result
 summary(equiv_test)
-#> ── Equivalence Test ────────────────────────────────────────────────────
+#> ── Equivalence Test ────────────────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>        0.020332       -0.036161        0.021196        0.000204 
+#>         0.02033        -0.04272         0.03611         0.00632 
 #> 
 #> [1] H0 of non-equivalence is REJECTED with threshold 0.054
 
@@ -133,9 +144,9 @@ equiv_test2 <- equivalence_test(
 
 ## view result
 summary(equiv_test2)
-#> ── Equivalence Test ────────────────────────────────────────────────────
+#> ── Equivalence Test ────────────────────────────────────────────────────────────
 #> Estimate (tmax)           Lower           Upper          pvalue 
-#>          0.0203         -0.0362          0.0212          0.8589 
+#>          0.0203         -0.0427          0.0361          0.7835 
 #> 
 #> [1] H0 of non-equivalence is NOT REJECTED with threshold 0.01
 ```

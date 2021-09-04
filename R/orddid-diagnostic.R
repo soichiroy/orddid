@@ -19,14 +19,18 @@
 
 #' Conduct an equivalence test of the distributional parallel trends assumption.
 #'
-#' \code{equivalence_test()} implements an equivalance test to assess the distributional parallel trends assumption
-#'  using the data from the pre-treatment periods.
+#' \code{equivalence_test()} implements an equivalance test
+#'    to assess the distributional parallel trends assumption
+#'    using the data from the pre-treatment periods.
 #'
 #' @param object A fitted object from \code{\link{ord_did}}.
-#' @param alpha The level of a test. This value should take between 0 and 1. Default is 0.05.
+#' @param alpha The level of a test.
+#'    This value should take between 0 and 1. Default is 0.05.
 #' @param threshold An equivalance threshold.
-#'    If left as \code{NULL}, the data-driven threshold, estimated in \code{\link{calc_threshold}}, is used for the test.
-#' @return \code{equivalence_test()} returns a list of class `orddid.test', which contains the following items:
+#'    If left as \code{NULL}, the data-driven threshold,
+#'    estimated in \code{\link{calc_threshold}}, is used for the test.
+#' @return \code{equivalence_test()} returns a list of
+#'  class `orddid.test', which contains the following items:
 #'    \item{tv}{A vector of point-wise deviation between q1(v) and q0(v).}
 #'    \item{tv_var}{A vector of variances for each t(v).}
 #'    \item{tmax}{A maximum deviation of q1(v) and q0(v).}
@@ -39,7 +43,8 @@
 #'    \item{Lpvalue}{Point-wise pvalues associated with the lower bounds.}
 #'    \item{pvalue}{P-value of the test.}
 #'    \item{zscore}{Z-score of the test.}
-#'    \item{reject}{Decision of the equivalance test. If \code{TRUE}, the test rejects the null of non-equivalance.}
+#'    \item{reject}{Decision of the equivalance test.
+#'      If \code{TRUE}, the test rejects the null of non-equivalance.}
 #' @importFrom Matrix bdiag
 #' @export
 equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
@@ -55,13 +60,7 @@ equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
 
   ## extract information
   theta <- object$fit$theta
-  nobs  <- attr(object, 'n') * 2
   vcov  <- cov(object$boot_params)
-
-  ## zero out under independent unit assumption
-  # v0 <- vcov[1:4, 1:4]; v1 <- vcov[5:8, 5:8]
-  # vcov <- as.matrix(bdiag(list(v0, v1)))
-
 
   ## compute t(v)
   v_range      <- seq(0.001, 0.999, by = 0.01)
@@ -233,13 +232,13 @@ tv_gradient <- function(v, theta) {
 
 
 
-##
-## Wald test
-##
+## --------------------------------------------------------------- ## 
+##                         Wald test                               ##
+## --------------------------------------------------------------- ##
+
 
 #' Wald-based Falsification test for the distributional parallel trends assumption
 #' @param object An output from \code{orddid} function.
-#' @param alpha A level of the test.
 #' @importFrom Matrix bdiag
 #' @export
 wald_test <- function(object) {
@@ -249,8 +248,8 @@ wald_test <- function(object) {
 
   ## obtain estimates
   vcov  <- cov(object$boot_params)
-  v0    <- vcov[1:4, 1:4]; v1 <- vcov[5:8, 5:8]
-  vcov  <- as.matrix(bdiag(list(v0, v1)))
+  # v0    <- vcov[1:4, 1:4]; v1 <- vcov[5:8, 5:8]
+  # vcov  <- as.matrix(bdiag(list(v0, v1)))
   theta <- unlist(object$fit$theta)
   n_cov <- ncol(vcov)
 

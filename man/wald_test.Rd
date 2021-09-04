@@ -8,8 +8,6 @@ wald_test(object)
 }
 \arguments{
 \item{object}{An output from \code{orddid} function.}
-
-\item{alpha}{A level of the test.}
 }
 \description{
 Wald-based Falsification test for the distributional parallel trends assumption
