@@ -15,7 +15,6 @@ knitr::opts_chunk$set(
 
 <!-- badges: start -->
 `r badger::badge_devel("soichiroy/orddid", "blue")`
-[![Travis build status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
 [![Codecov test coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)](https://codecov.io/gh/soichiroy/orddid?branch=master)
 [![R build status](https://github.com/soichiroy/orddid/workflows/R-CMD-check/badge.svg)](https://github.com/soichiroy/orddid/actions)
 <!-- badges: end -->
@@ -111,6 +110,16 @@ wald_test <- wald_test(fit)
 round(wald_test$p_value, 3)
 
 
+pnorm_00 <- function(x) pnorm(x, mean = fit$fit$theta$mu00, sd = fit$fit$theta$sd00)
+pnorm_10 <- function(x) pnorm(x, mean = fit$fit$theta$mu10, sd = fit$fit$theta$sd10)
+pnorm_01 <- function(x) pnorm(x, mean = fit$fit$theta$mu01, sd = fit$fit$theta$sd01)
+pnorm_11 <- function(x) pnorm(x, mean = fit$fit$theta$mu11, sd = fit$fit$theta$sd11)
+
+# par(mfrow = c(1, 2)) 
+curve(pnorm_00, from = -3, to = 4, xlab = "", ylab = "")
+curve(pnorm_10, from = -3, to = 4, col = 'red', add = TRUE)
+curve(pnorm_01, from = -3, to = 4, add = TRUE, lwd = 1.5, lty = 2)
+curve(pnorm_11, from = -3, to = 4, col = 'red', add = TRUE, lwd = 1.5, lty = 2)
 
 ## equivalence test
 equiv_test <- equivalence_test(

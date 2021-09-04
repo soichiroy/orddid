@@ -6,8 +6,6 @@
 <!-- badges: start -->
 
 [![](https://img.shields.io/badge/devel%20version-0.1.0-blue.svg)](https://github.com/soichiroy/orddid)
-[![Travis build
-status](https://travis-ci.org/soichiroy/orddid.svg?branch=master)](https://travis-ci.org/soichiroy/orddid)
 [![Codecov test
 coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)](https://codecov.io/gh/soichiroy/orddid?branch=master)
 [![R build
@@ -115,6 +113,21 @@ round(wald_test$p_value, 3)
 #> [1,] 0.28
 
 
+pnorm_00 <- function(x) pnorm(x, mean = fit$fit$theta$mu00, sd = fit$fit$theta$sd00)
+pnorm_10 <- function(x) pnorm(x, mean = fit$fit$theta$mu10, sd = fit$fit$theta$sd10)
+pnorm_01 <- function(x) pnorm(x, mean = fit$fit$theta$mu01, sd = fit$fit$theta$sd01)
+pnorm_11 <- function(x) pnorm(x, mean = fit$fit$theta$mu11, sd = fit$fit$theta$sd11)
+
+# par(mfrow = c(1, 2)) 
+curve(pnorm_00, from = -3, to = 4, xlab = "", ylab = "")
+curve(pnorm_10, from = -3, to = 4, col = 'red', add = TRUE)
+curve(pnorm_01, from = -3, to = 4, add = TRUE, lwd = 1.5, lty = 2)
+curve(pnorm_11, from = -3, to = 4, col = 'red', add = TRUE, lwd = 1.5, lty = 2)
+```
+
+![](man/figures/README-example2-1.png)<!-- -->
+
+``` r
 
 ## equivalence test
 equiv_test <- equivalence_test(
@@ -133,7 +146,7 @@ summary(equiv_test)
 plot(equiv_test, ylim = c(-0.1, 0.1), fill = FALSE)
 ```
 
-![](man/figures/README-example2-1.png)<!-- -->
+![](man/figures/README-example2-2.png)<!-- -->
 
 ``` r
 
