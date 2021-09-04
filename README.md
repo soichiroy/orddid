@@ -128,7 +128,6 @@ curve(pnorm_11, from = -3, to = 4, col = 'red', add = TRUE, lwd = 1.5, lty = 2)
 ![](man/figures/README-example2-1.png)<!-- -->
 
 ``` r
-
 ## equivalence test
 equiv_test <- equivalence_test(
   object = fit, alpha = 0.05
@@ -146,7 +145,7 @@ summary(equiv_test)
 plot(equiv_test, ylim = c(-0.1, 0.1), fill = FALSE)
 ```
 
-![](man/figures/README-example2-2.png)<!-- -->
+![](man/figures/README-equiv_test-1.png)<!-- -->
 
 ``` r
 

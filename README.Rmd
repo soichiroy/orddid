@@ -120,7 +120,9 @@ curve(pnorm_00, from = -3, to = 4, xlab = "", ylab = "")
 curve(pnorm_10, from = -3, to = 4, col = 'red', add = TRUE)
 curve(pnorm_01, from = -3, to = 4, add = TRUE, lwd = 1.5, lty = 2)
 curve(pnorm_11, from = -3, to = 4, col = 'red', add = TRUE, lwd = 1.5, lty = 2)
+```
 
+```{r equiv_test, fig.height=5.5, fig.width=5.5}
 ## equivalence test
 equiv_test <- equivalence_test(
   object = fit, alpha = 0.05
