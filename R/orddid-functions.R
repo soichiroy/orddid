@@ -1,9 +1,16 @@
-#
-# title: functions called by ord_did() in orddid.R
-#
-# author: Soichiro Yamauchi
-#
-#
+
+#' Estimate the baseline parameters using Y00 (t = 0, d = 0) observations
+#' 
+#' @param Y00 A vector of pre-treatment control observations.
+#' @param cutoff A value for the first cutoff value to be fixed. Default is 0.
+#'  
+#' @noRd
+.EstimateBaselineParams <- function(Y00, cutoff = 0) {
+
+  ## Implement the ordinal probit regression only with the intercept.
+  fit <- .FitOrderedProbit(Y = Y00, init = NULL, cut = cutoff)
+  return(list(mu = fit$mu, sd = fit$sd, cutoff = fit$cutoff))
+}
 
 #' Parameter Estimation for the Counterfactual Outcome
 #'

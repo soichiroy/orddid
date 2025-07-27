@@ -1,11 +1,11 @@
 Package: orddid
 Title: Difference-in-Differences Design for Ordinal Outcome
-Version: 0.1.0
+Version: 1.0.0
 Authors@R:
     person(given = "Soichiro",
            family = "Yamauchi",
            role = c("aut", "cre"),
-           email = "syamauchi@g.harvard.edu",
+           email = "soichiro@ucsd.edu",
            comment = c(ORCID = "0000-0003-0554-2717"))
 Imports:
     cli,
@@ -21,7 +21,7 @@ Description: A R package for implementing difference-in-differences design for t
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.3.2
 Suggests: 
     testthat (>= 2.1.0),
     dplyr,
