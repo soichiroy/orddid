@@ -1,4 +1,3 @@
-
 #' Ordinal Difference-in-Differences for Panel Data
 #'
 #' \code{ord_did()} implements the difference-in-differences for the ordinal outcome.
@@ -50,38 +49,96 @@
 #' summary(fit)
 #' }
 #' @export
-ord_did <- function(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
-                    n_boot = 500, pre = FALSE, verbose = FALSE) {
+ord_did <- function(Y11, Y10, Y01, Y00) {
+  y1_obs <- .EstimateObservedDist(Y11 = Y11)
+  y1_cf <- .EstimateCounterfactualDist(Y10 = Y10, Y01 = Y01, Y00 = Y00)
 
-  ## quick input check
-  ord_did_check_input(Ynew, Yold, treat, id_cluster, n_boot)
-
-  ## data summary
-  Yc <- c(Ynew, Yold)
-  J  <- length(unique(Yc))
-  n  <- length(treat)
-  n1 <- sum(treat)
-
-
-  ## fit on the obs data
-  fit <- ord_did_run(Ynew, Yold, treat, cut, pre)
-
-  ## bootstrap (assuming a panel)
-  boot <- ord_did_boot(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose, pre)
-
-  ## return objects
-  return_list <- list(
-    'fit' = fit,
-    'boot' = boot$boot_save,
-    'boot_params' = boot$boot_params)
-
-
-  ## add attributes to the returning object
-  attr(return_list, "input")    <- list(n_boot = n_boot, pre = pre, cut = cut)
-  attr(return_list, "n_choice") <- J
-  attr(return_list, "n")        <- n
-  attr(return_list, "n1")       <- n1
-
-  class(return_list) <- c("orddid", "orddid.fit")
-  return(return_list)
+  # Compute effects
+  effects <- .ComputeTreatmentEffects(
+    y1_prop = y1_obs$prob,
+    y0_prop = y1_cf$prob
+  )
+  # cumulative_effects <- .CumulativeEffects(
+  #   y1_prop = y1_obs$prob,
+  #   y0_prop = y1_cf$prob
+  # )
+  return(effects)
 }
+
+.EstimateCounterfactualDist <- function(Y10, Y01, Y00) {
+  # Estimate parameters for the observed outcome
+  fit_obs <- .EstimateControlParams(
+    Y00 = Y00,
+    Y01 = Y01,
+    Y10 = Y10
+  )
+
+  # Estimate parameters for the counterfactual outcome
+  fit_cf <- .EstimateCounterfactualParams(fit = fit_obs)
+
+  # Estimate the outcome proportions
+  prob_y11 <- .EstimateOutcomeProportions(
+    mu = fit_cf$mu,
+    sd = fit_cf$sd,
+    cutoff = fit_cf$cutoff
+  )
+
+  return(list(
+    params = fit_cf,
+    prob = prob_y11
+  ))
+}
+
+.EstimateObservedDist <- function(Y11) {
+  # Estimate parameters for the observed outcome
+  fit_obs <- .EstimateLatentOutcomeParams(
+    Ydt = Y11,
+    cutoff = NULL
+  )
+
+  # Estimate the outcome proportions
+  prob_y11 <- .EstimateOutcomeProportions(
+    mu = fit_obs$mu,
+    sd = fit_obs$sd,
+    cutoff = fit_obs$cutoff
+  )
+
+  return(list(
+    params = fit_obs,
+    prob = prob_y11
+  ))
+}
+
+# ord_did <- function(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
+#                     n_boot = 500, pre = FALSE, verbose = FALSE) {
+
+#   ## quick input check
+#   ord_did_check_input(Ynew, Yold, treat, id_cluster, n_boot)
+
+#   ## data summary
+#   Yc <- c(Ynew, Yold)
+#   J  <- length(unique(Yc))
+#   n  <- length(treat)
+#   n1 <- sum(treat)
+
+#   ## fit on the obs data
+#   fit <- ord_did_run(Ynew, Yold, treat, cut, pre)
+
+#   ## bootstrap (assuming a panel)
+#   boot <- ord_did_boot(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose, pre)
+
+#   ## return objects
+#   return_list <- list(
+#     'fit' = fit,
+#     'boot' = boot$boot_save,
+#     'boot_params' = boot$boot_params)
+
+#   ## add attributes to the returning object
+#   attr(return_list, "input")    <- list(n_boot = n_boot, pre = pre, cut = cut)
+#   attr(return_list, "n_choice") <- J
+#   attr(return_list, "n")        <- n
+#   attr(return_list, "n1")       <- n1
+
+#   class(return_list) <- c("orddid", "orddid.fit")
+#   return(return_list)
+# }

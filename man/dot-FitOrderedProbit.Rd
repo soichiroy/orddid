@@ -2,14 +2,21 @@
 % Please edit documentation in R/orddid-probit.R
 \name{.FitOrderedProbit}
 \alias{.FitOrderedProbit}
-\title{Fit Probit Regression}
+\title{Fit Ordinal Probit Regression via MLE}
 \usage{
 .FitOrderedProbit(Y, init = NULL, cutoff_val = NULL)
 }
 \arguments{
 \item{Y}{A vector of outcome}
+
+\item{init}{A vector of initial values. The first element is for the mean,
+and the second element is for the standard deviation. If NULL, the default
+values are used: 0 for mean, 1 for standard deviation.}
+
+\item{cutoff_val}{A vector of cutoff values. If NULL, the cutoffs are
+estimated fix the first cutoff is fixed at 1.}
 }
 \description{
-Fitting ordered probit regression
+Fit Ordinal Probit Regression via MLE
 }
 \keyword{internal}
