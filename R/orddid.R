@@ -61,7 +61,7 @@
 #' summary(fit)
 #' }
 #' @export
-ord_did <- function(data, outcome, post, treat, cluster) {
+ord_did <- function(data, outcome, post, treat, cluster, n_boot = 500) {
   df_format <- .orddid_extract_Y_cells(
     data = data,
     outcome = outcome,
@@ -73,7 +73,7 @@ ord_did <- function(data, outcome, post, treat, cluster) {
   point_estimate <- .GetPointEstimate(df = df_format)
 
   # Bootstrap
-  boot_estimate <- lapply(1:50, function(i) {
+  boot_estimate <- lapply(1:n_boot, function(i) {
     .RunBootstrap(
       df = data,
       cluster = cluster,
