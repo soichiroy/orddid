@@ -49,15 +49,27 @@ data("gun_twowave")
 ## run
 ## fit the ordinal DID
 set.seed(1234)
-fit <- ord_did(
-  Ynew = gun_twowave \%>\% filter(year == 2012) \%>\% pull(guns),
-  Yold = gun_twowave \%>\% filter(year == 2010) \%>\% pull(guns),
-  treat = gun_twowave \%>\% filter(year == 2012) \%>\% pull(treat_100mi),
-  id_cluster = gun_twowave \%>\% filter(year == 2010) \%>\% pull(reszip),
-  n_boot = 10,
-  pre = FALSE,
-  verbose = FALSE
-)
+treated_id <- gun_twowave \%>\%
+  filter(treat_25mi == 1) \%>\%
+  select(caseid, treated_group = treat_25mi)
+dat_use <- gun_twowave \%>\%
+  left_join(treated_id, by = "caseid") \%>\%
+  mutate(
+    post = ifelse(year == 2012, TRUE, FALSE),
+    treated = ifelse(!is.na(treated_group), TRUE, FALSE)
+  )
+
+dat_use \%>\%
+  group_by(pid3) \%>\%
+  group_map(
+    ~ ord_did(
+      data = .x,
+      outcome = "guns",
+      post = "post",
+      treat = "treated",
+      cluster = "caseid"
+    )
+  )
 
 ## view summary of the output
 ## non-cumulative effects
