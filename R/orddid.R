@@ -49,20 +49,41 @@
 #' summary(fit)
 #' }
 #' @export
-ord_did <- function(Y11, Y10, Y01, Y00) {
-  y1_obs <- .EstimateObservedDist(Y11 = Y11)
-  y1_cf <- .EstimateCounterfactualDist(Y10 = Y10, Y01 = Y01, Y00 = Y00)
+ord_did <- function(data, outcome, post, treat) {
+  df_format <- .orddid_extract_Y_cells(
+    data = data,
+    outcome = outcome,
+    post = post,
+    treat = treat
+  )
+  y1_obs <- .EstimateObservedDist(Y11 = df_format$Y11)
+  y1_cf <- .EstimateCounterfactualDist(
+    Y10 = df_format$Y10,
+    Y01 = df_format$Y01,
+    Y00 = df_format$Y00
+  )
 
   # Compute effects
-  effects <- .ComputeTreatmentEffects(
+  diff_effects <- .ComputeTreatmentEffects(
     y1_prop = y1_obs$prob,
     y0_prop = y1_cf$prob
   )
-  # cumulative_effects <- .CumulativeEffects(
-  #   y1_prop = y1_obs$prob,
-  #   y0_prop = y1_cf$prob
-  # )
-  return(effects)
+  relative <- .ComputeRelativeEffect(
+    p1 = y1_obs$prob,
+    p0 = y1_cf$prob
+  )
+  return(
+    list(
+      estimated_props = list(
+        y1_obs = y1_obs$prob,
+        y1_cf =  y1_cf$prob
+      ),
+      estimated_effects = list(
+        diff_effects = diff_effects,
+        relative_effect = relative
+      )
+    )
+  )
 }
 
 .EstimateCounterfactualDist <- function(Y10, Y01, Y00) {

@@ -4,15 +4,15 @@
 \alias{ord_did}
 \title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(Y11, Y10, Y01, Y00)
+ord_did(data, outcome, post, treat)
 }
 \arguments{
+\item{treat}{A numeric vector of treatment indicator.
+The treatment group should take 1 and the control group should take 0.}
+
 \item{Ynew}{A numeric vector of ordinal outcome for the post-treatment period.}
 
 \item{Yold}{A numeric vector of ordinal outcome for the pre-treatment period.}
-
-\item{treat}{A numeric vector of treatment indicator.
-The treatment group should take 1 and the control group should take 0.}
 
 \item{id_cluster}{A vector of cluster id.
 If left as \code{NULL}, bootstrap is implemented at the individual level.}
