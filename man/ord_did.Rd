@@ -4,7 +4,7 @@
 \alias{ord_did}
 \title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(data, outcome, post, treat)
+ord_did(data, outcome, post, treat, cluster)
 }
 \arguments{
 \item{treat}{A numeric vector of treatment indicator.

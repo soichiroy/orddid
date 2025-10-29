@@ -49,18 +49,47 @@
 #' summary(fit)
 #' }
 #' @export
-ord_did <- function(data, outcome, post, treat) {
+ord_did <- function(data, outcome, post, treat, cluster) {
   df_format <- .orddid_extract_Y_cells(
     data = data,
     outcome = outcome,
     post = post,
     treat = treat
   )
-  y1_obs <- .EstimateObservedDist(Y11 = df_format$Y11)
+
+  # Compute point estimate
+  point_estimate <- .GetPointEstimate(df = df_format)
+
+  # Bootstrap
+  boot_estimate <- lapply(1:50, function(i) {
+    .RunBootstrap(
+      df = data,
+      cluster = cluster,
+      outcome = outcome,
+      post = post,
+      treat = treat
+    )
+  })
+
+  ci_diff <- .ComputeCI(boot_estimates = boot_estimate, alpha = 0.05)
+  # Summarize results
+  res <- tibble(
+    category = 1:length(point_estimate$estimated_effects$diff_effects),
+    effect = point_estimate$estimated_effects$diff_effects,
+    lower_ci = ci_diff$lower,
+    upper_ci = ci_diff$upper
+  )
+  return(list(
+    estimate_effects = res
+  ))
+}
+
+.GetPointEstimate <- function(df) {
+  y1_obs <- .EstimateObservedDist(Y11 = df$Y11)
   y1_cf <- .EstimateCounterfactualDist(
-    Y10 = df_format$Y10,
-    Y01 = df_format$Y01,
-    Y00 = df_format$Y00
+    Y10 = df$Y10,
+    Y01 = df$Y01,
+    Y00 = df$Y00
   )
 
   # Compute effects
@@ -76,7 +105,7 @@ ord_did <- function(data, outcome, post, treat) {
     list(
       estimated_props = list(
         y1_obs = y1_obs$prob,
-        y1_cf =  y1_cf$prob
+        y1_cf = y1_cf$prob
       ),
       estimated_effects = list(
         diff_effects = diff_effects,
