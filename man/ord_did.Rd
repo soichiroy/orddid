@@ -4,11 +4,13 @@
 \alias{ord_did}
 \title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(data, outcome, post, treat, cluster)
+ord_did(data, outcome, post, treat, cluster, n_boot = 500)
 }
 \arguments{
 \item{treat}{A numeric vector of treatment indicator.
 The treatment group should take 1 and the control group should take 0.}
+
+\item{n_boot}{The number of boostrapt iterations for estimating the variance. Default is \code{n_boot = 500}.}
 
 \item{Ynew}{A numeric vector of ordinal outcome for the post-treatment period.}
 
@@ -18,8 +20,6 @@ The treatment group should take 1 and the control group should take 0.}
 If left as \code{NULL}, bootstrap is implemented at the individual level.}
 
 \item{cut}{A vector of cutoffs. Two numeric values should be specified. Default is \code{cut = c(0, 1)}.}
-
-\item{n_boot}{The number of boostrapt iterations for estimating the variance. Default is \code{n_boot = 500}.}
 
 \item{pre}{A boolean argument used to indicate if the data comes entirely from pre-treatment periods.
 This should be \code{TRUE} when the output is supplied to \code{\link{equivalence_test}}.}

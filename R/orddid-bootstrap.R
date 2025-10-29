@@ -24,7 +24,7 @@
 .SampleDf <- function(df, cluster) {
   df_boot <- df %>%
     group_by(across(all_of(cluster))) %>%
-    slice_sample(prop = 1) %>%
+    slice_sample(prop = 1, replace = TRUE) %>%
     ungroup()
   return(df_boot)
 }
