@@ -1,4 +1,5 @@
 ^data-raw$
+^misc$
 ^README\.Rmd$
 ^\.travis\.yml$
 ^codecov\.yml$
