@@ -4,31 +4,22 @@
 \alias{ord_did}
 \title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(
-  Ynew,
-  Yold,
-  treat,
-  id_cluster = NULL,
-  cut = c(0, 1),
-  n_boot = 500,
-  pre = FALSE,
-  verbose = FALSE
-)
+ord_did(data, outcome, post, treat, cluster, n_boot = 500)
 }
 \arguments{
+\item{treat}{A numeric vector of treatment indicator.
+The treatment group should take 1 and the control group should take 0.}
+
+\item{n_boot}{The number of boostrapt iterations for estimating the variance. Default is \code{n_boot = 500}.}
+
 \item{Ynew}{A numeric vector of ordinal outcome for the post-treatment period.}
 
 \item{Yold}{A numeric vector of ordinal outcome for the pre-treatment period.}
-
-\item{treat}{A numeric vector of treatment indicator.
-The treatment group should take 1 and the control group should take 0.}
 
 \item{id_cluster}{A vector of cluster id.
 If left as \code{NULL}, bootstrap is implemented at the individual level.}
 
 \item{cut}{A vector of cutoffs. Two numeric values should be specified. Default is \code{cut = c(0, 1)}.}
-
-\item{n_boot}{The number of boostrapt iterations for estimating the variance. Default is \code{n_boot = 500}.}
 
 \item{pre}{A boolean argument used to indicate if the data comes entirely from pre-treatment periods.
 This should be \code{TRUE} when the output is supplied to \code{\link{equivalence_test}}.}
@@ -58,15 +49,27 @@ data("gun_twowave")
 ## run
 ## fit the ordinal DID
 set.seed(1234)
-fit <- ord_did(
-  Ynew = gun_twowave \%>\% filter(year == 2012) \%>\% pull(guns),
-  Yold = gun_twowave \%>\% filter(year == 2010) \%>\% pull(guns),
-  treat = gun_twowave \%>\% filter(year == 2012) \%>\% pull(treat_100mi),
-  id_cluster = gun_twowave \%>\% filter(year == 2010) \%>\% pull(reszip),
-  n_boot = 10,
-  pre = FALSE,
-  verbose = FALSE
-)
+treated_id <- gun_twowave \%>\%
+  filter(treat_25mi == 1) \%>\%
+  select(caseid, treated_group = treat_25mi)
+dat_use <- gun_twowave \%>\%
+  left_join(treated_id, by = "caseid") \%>\%
+  mutate(
+    post = ifelse(year == 2012, TRUE, FALSE),
+    treated = ifelse(!is.na(treated_group), TRUE, FALSE)
+  )
+
+dat_use \%>\%
+  group_by(pid3) \%>\%
+  group_map(
+    ~ ord_did(
+      data = .x,
+      outcome = "guns",
+      post = "post",
+      treat = "treated",
+      cluster = "caseid"
+    )
+  )
 
 ## view summary of the output
 ## non-cumulative effects
