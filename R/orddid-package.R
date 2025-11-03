@@ -14,9 +14,3 @@
 #' In addition to the above functions, \code{orddid} packages contains two example datasets:
 #'  \code{\link{gun_twowave}} and \code{\link{gun_threewave}}.
 "_PACKAGE"
-
-
-#' @useDynLib orddid
-#' @importFrom Rcpp sourceCpp
-#' @exportPattern "^[[:alpha:]]+"
-NULL

@@ -110,6 +110,7 @@
 #'   vector of the outcome in the corresponding cell.
 #'
 #' @keywords internal
+#' @export 
 .orddid_extract_Y_cells <- function(data, outcome, post, treat, remove_na = TRUE) {
   y <- data[[outcome]]
   p <- data[[post]]

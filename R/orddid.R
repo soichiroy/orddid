@@ -61,7 +61,15 @@
 #' summary(fit)
 #' }
 #' @export
-ord_did <- function(data, outcome, post, treat, cluster, n_boot = 500) {
+ord_did <- function(
+  data,
+  outcome,
+  post,
+  treat,
+  cluster,
+  n_boot = 500,
+  use_parallel = FALSE
+) {
   df_format <- .orddid_extract_Y_cells(
     data = data,
     outcome = outcome,
@@ -72,27 +80,80 @@ ord_did <- function(data, outcome, post, treat, cluster, n_boot = 500) {
   # Compute point estimate
   point_estimate <- .GetPointEstimate(df = df_format)
 
-  # Bootstrap
-  boot_estimate <- lapply(1:n_boot, function(i) {
-    .RunBootstrap(
-      df = data,
-      cluster = cluster,
-      outcome = outcome,
-      post = post,
-      treat = treat
+  if (use_parallel) {
+    n_cores <- max(1, parallel::detectCores() - 1)
+    cl <- parallel::makeCluster(n_cores)
+    doParallel::registerDoParallel(cl)
+    on.exit(
+      {
+        parallel::stopCluster(cl)
+        foreach::registerDoSEQ()
+      },
+      add = TRUE
     )
-  })
+  } else {
+    foreach::registerDoSEQ()
+  }
+
+  # Compute bootstrap estimates
+  boot_estimate <- foreach::foreach(
+    i = seq_len(n_boot),
+    .combine = dplyr::bind_rows,
+    .inorder = FALSE,
+    .packages = c("dplyr", "rlang", "orddid")
+  ) %dopar%
+    {
+      est <- .RunBootstrap( 
+        df = data,
+        cluster = cluster,
+        outcome = outcome,
+        post = post,
+        treat = treat
+      )
+      tibble::tibble(
+        iteration = i,
+        diff_effects = list(est$diff_effects),
+        relative_effect = list(est$relative_effect)
+      )
+    }
 
   ci_diff <- .ComputeCI(boot_estimates = boot_estimate, alpha = 0.05)
+
   # Summarize results
-  res <- tibble(
+  diff_res <- tibble(
     category = 1:length(point_estimate$estimated_effects$diff_effects),
     effect = point_estimate$estimated_effects$diff_effects,
     lower_ci = ci_diff$lower,
     upper_ci = ci_diff$upper
   )
+
+  # Relative effect results
+  relative_ci <- imbens_manski_ci(
+    lb_hat = point_estimate$estimated_effects$relative_effect[1],
+    ub_hat = point_estimate$estimated_effects$relative_effect[2],
+    se_lb = ci_diff$re_se[1],
+    se_ub = ci_diff$re_se[2],
+    alpha = 0.05,
+    truncate_diff = TRUE
+  )
+
+  relative_res <- tibble(
+    effect_lb = point_estimate$estimated_effects$relative_effect[1],
+    effect_ub = point_estimate$estimated_effects$relative_effect[2],
+    lower_ci = relative_ci$ci[1],
+    upper_ci = relative_ci$ci[2],
+    c_crit = relative_ci$c_crit
+  )
   return(list(
-    estimate_effects = res
+    inputs = list(
+      outcome = outcome,
+      post = post,
+      treat = treat,
+      cluster = cluster,
+      n_boot = n_boot
+    ),
+    estimate_effects = diff_res,
+    relative_effects = relative_res
   ))
 }
 
@@ -170,37 +231,3 @@ ord_did <- function(data, outcome, post, treat, cluster, n_boot = 500) {
     prob = prob_y11
   ))
 }
-
-# ord_did <- function(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
-#                     n_boot = 500, pre = FALSE, verbose = FALSE) {
-
-#   ## quick input check
-#   ord_did_check_input(Ynew, Yold, treat, id_cluster, n_boot)
-
-#   ## data summary
-#   Yc <- c(Ynew, Yold)
-#   J  <- length(unique(Yc))
-#   n  <- length(treat)
-#   n1 <- sum(treat)
-
-#   ## fit on the obs data
-#   fit <- ord_did_run(Ynew, Yold, treat, cut, pre)
-
-#   ## bootstrap (assuming a panel)
-#   boot <- ord_did_boot(Ynew, Yold, treat, cut, id_cluster, J, n_boot, verbose, pre)
-
-#   ## return objects
-#   return_list <- list(
-#     'fit' = fit,
-#     'boot' = boot$boot_save,
-#     'boot_params' = boot$boot_params)
-
-#   ## add attributes to the returning object
-#   attr(return_list, "input")    <- list(n_boot = n_boot, pre = pre, cut = cut)
-#   attr(return_list, "n_choice") <- J
-#   attr(return_list, "n")        <- n
-#   attr(return_list, "n1")       <- n1
-
-#   class(return_list) <- c("orddid", "orddid.fit")
-#   return(return_list)
-# }
