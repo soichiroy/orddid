@@ -177,6 +177,7 @@ run_equivalence <- function(
 
 #' Plot equivalence test result
 #' @importFrom ggplot2 ggplot aes geom_hline geom_line labs annotate theme_minimal
+#' @export
 plot_equivalence <- function(equivalence_result) {
   df_plot <- equivalence_result$estimates
 
@@ -192,7 +193,7 @@ plot_equivalence <- function(equivalence_result) {
     ggplot2::geom_line(aes(y = lower_ci), linetype = "dashed") +
     ggplot2::geom_line(
       ggplot2::aes(y = point_estimate),
-      color = "blue",
+      color = "#006284",
       linewidth = 1.2
     ) +
     ggplot2::labs(
@@ -203,7 +204,7 @@ plot_equivalence <- function(equivalence_result) {
     ggplot2::geom_hline(
       yintercept = c(-d_max, d_max),
       linetype = "dotted",
-      color = 'red'
+      color = "#990000"
     ) +
     ggplot2::annotate(
       "text",
@@ -217,7 +218,7 @@ plot_equivalence <- function(equivalence_result) {
         round(worst_case_bias, 3),
         ")"
       ),
-      color = "red",
+      color =  "#990000",
       vjust = -0.5
     ) +
     ggplot2::ylim(-1.1 * d_max, 1.1 * d_max) +
