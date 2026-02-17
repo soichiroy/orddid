@@ -66,18 +66,11 @@
   # Add end points
   cut <- .PadInf(cut)
 
-  # Data summary
-  j_min <- min(Y)
-  j_max <- max(Y)
-  item <- 1
-  ll <- 0
-
-  # Evaluate the likelihood
-  loglikelihood <- purrr::map_dbl(1:j_max, function(j) {
-    nj <- sum(Y == j)
-    ll <- nj *
-      log(pnorm((cut[j + 1] - mu_y) / sd_y) - pnorm((cut[j] - mu_y) / sd_y))
-    return(ll)
+  # Evaluate the likelihood over sorted categories
+  cats <- sort(unique(Y))
+  loglikelihood <- purrr::map_dbl(seq_along(cats), function(k) {
+    nj <- sum(Y == cats[k])
+    nj * log(pnorm((cut[k + 1] - mu_y) / sd_y) - pnorm((cut[k] - mu_y) / sd_y))
   })
 
   # Return the negative log-likelihood for minimization
