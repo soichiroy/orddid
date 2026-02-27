@@ -5,7 +5,7 @@
 
 #' Estimate cutoff alpha using the smoothed Ftilde
 #'
-#' Solves: mean(1 - 1{Y = max(Y)} - Ftilde(X'b + alpha)) = 0
+#' Solves: mean(1 - 1\{Y = max(Y)\} - Ftilde(X'b + alpha)) = 0
 #'
 #' @param Y00    outcomes for (D=0, t=0) cell
 #' @param X00    design matrix

@@ -6,6 +6,7 @@
 #'   values are used: 0 for mean, 1 for standard deviation.
 #' @param cutoff_val A vector of cutoff values. If NULL, the cutoffs are
 #'   estimated fix the first cutoff is fixed at 1.
+#' @importFrom stats runif optim
 #' @keywords internal
 .FitOrderedProbit <- function(Y, init = NULL, cutoff_val = NULL) {
   # Set initial values

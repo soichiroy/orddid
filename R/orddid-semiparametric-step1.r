@@ -1,7 +1,7 @@
 
 # =========================================================
 # One-call wrapper: Stage 1(ii) -> Stage 2 + reusable \hat F
-# Returns β̂, α̂, \hat F, index g, and a predict_probs() closure
+# Returns beta_hat, alpha_hat, \hat F, index g, and a predict_probs() closure
 # =========================================================
 
 #' Two-Stage Semiparametric Estimation for Ordered Response Models
@@ -46,11 +46,11 @@
 #' This function implements the complete two-stage estimation procedure:
 #' \itemize{
 #'   \item \strong{Stage 1(i):} Isotonic regression (PAVA) to estimate F(X'beta | beta)
-#'   \item \strong{Stage 1(ii):} Solve moment condition E[X_{-fixed} * (1{Y=1} - F(X'beta))] = 0
-#'   \item \strong{Stage 2:} Find alpha satisfying E[1 - 1{Y=3} - F(X'beta + alpha)] = 0
+#'   \item \strong{Stage 1(ii):} Solve moment condition E[X_\{-fixed\} * (1\{Y=1\} - F(X'beta))] = 0
+#'   \item \strong{Stage 2:} Find alpha satisfying E[1 - 1\{Y=3\} - F(X'beta + alpha)] = 0
 #' }
 #'
-#' The model assumes: P(Y = j | X) = F(X'beta + alpha_{j-1}) - F(X'beta + alpha_{j-2})
+#' The model assumes: P(Y = j | X) = F(X'beta + alpha_\{j-1\}) - F(X'beta + alpha_\{j-2\})
 #' where alpha_0 = -Inf, alpha_1 = 0 (normalized), alpha_2 = alpha (estimated), alpha_3 = Inf.
 #'
 #' @references
@@ -81,7 +81,7 @@
 #' probs <- fit$predict_probs(X_new)
 #' }
 #'
-#' @seealso \code{\link{stage1ii_solve}}, \code{\link{EstimateCutoff}}, \code{\link{stage1i_isotonic}}
+#' @seealso \code{stage1ii_solve}, \code{EstimateCutoff}, \code{stage1i_isotonic}
 #' @export
 ord_two_stage_fit <- function(
   Y,
@@ -92,6 +92,10 @@ ord_two_stage_fit <- function(
   method = c("spectral", "BB"),
   verbose = TRUE
 ) {
+  .Deprecated(msg = paste(
+    "ord_two_stage_fit() is deprecated.",
+    "Use ord_did() with method='semiparametric' for the NPMLE-based approach."
+  ))
   method <- match.arg(method)
   # Stage 1(ii)
   s1 <- stage1ii_solve(
@@ -128,7 +132,7 @@ ord_two_stage_fit <- function(
 }
 
 # =========================================================
-# Stage 1(i): isotonic PAVA for Fhat(·; beta)  (eq. (2.1))
+# Stage 1(i): isotonic PAVA for Fhat(.; beta)  (eq. (2.1))
 # Returns a reusable object with $predict (CDF) and $quantile (left-inverse)
 # =========================================================
 
@@ -191,11 +195,14 @@ stage1i_isotonic <- function(Y, X, beta, w = NULL, tol = 1e-12) {
   knots <- comp$u[block_end_idx]
   values <- pava$mu
 
-  # CDF evaluator
+  # CDF evaluator (proper extrapolation: 0 below range, 1 above)
   Fhat_u <- function(ut) {
     j <- findInterval(ut, knots, rightmost.closed = TRUE)
     j[j == 0] <- 1L
-    values[j]
+    res <- values[j]
+    res[ut < knots[1]] <- 0
+    res[ut > knots[length(knots)]] <- 1
+    res
   }
 
   # Quantile function (left-inverse)
@@ -264,7 +271,10 @@ load_Fhat <- function(file_or_list, beta_for_X = NULL) {
   Fhat_u <- function(ut) {
     j <- findInterval(ut, knots, rightmost.closed = TRUE)
     j[j == 0] <- 1L
-    values[j]
+    res <- values[j]
+    res[ut < knots[1]] <- 0
+    res[ut > knots[length(knots)]] <- 1
+    res
   }
 
   predict_fun <- function(Xnew, beta_for_X = beta_for_X) {
@@ -308,11 +318,12 @@ load_Fhat <- function(file_or_list, beta_for_X = NULL) {
 }
 
 # =========================================================
-# Stage 1(ii): solve Ψ_n(β)=0 (eq. (2.2))
+# Stage 1(ii): solve Psi_n(beta)=0 (eq. (2.2))
 # Spectral method with backtracking or BB::dfsane
 # =========================================================
 
 #' Initialize beta via probit regression
+#' @importFrom stats as.formula coef glm binomial sd uniroot
 #' @keywords internal
 .init_beta_probit <- function(Y, X, fixed_index) {
   y1 <- as.integer(Y == min(Y))
@@ -498,7 +509,7 @@ stage1ii_solve <- function(
   } else {
     if (verbose) {
       message(
-        "Using spectral residual (Barzilai–Borwein) with backtracking ..."
+        "Using spectral residual (Barzilai-Borwein) with backtracking ..."
       )
     }
     result <- .solve_spectral(
@@ -537,7 +548,7 @@ stage1ii_solve <- function(
 }
 
 # =========================================================
-# Stage 2: threshold α via monotone zero-crossing (eq. (2.3))
+# Stage 2: threshold alpha via monotone zero-crossing (eq. (2.3))
 # =========================================================
 EstimateCutoff <- function(
   Y,
@@ -567,7 +578,7 @@ EstimateCutoff <- function(
 
   if (psi_lo <= 0) {
     if (verbose) {
-      message(sprintf("Stage 2: Ψ(lo)=%.3e ≤ 0; α̂ = %.6g.", psi_lo, lo))
+      message(sprintf("Stage 2: Psi(lo)=%.3e <= 0; alpha_hat = %.6g.", psi_lo, lo))
     }
     return(list(
       alpha = lo,

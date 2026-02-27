@@ -66,6 +66,7 @@
 #' ## cumulative effects
 #' summary(fit)
 #' }
+#' @importFrom tibble tibble
 #' @export
 ord_did <- function(
   data,

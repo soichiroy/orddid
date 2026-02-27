@@ -8,6 +8,8 @@ calc_threshold(object, omega = 0.05)
 }
 \arguments{
 \item{object}{An object from \code{\link{ord_did}}, where the estimation is based on the pre-treatment data (\code{pre = TRUE}).}
+
+\item{omega}{Significance level for the equivalence threshold. Default is 0.05.}
 }
 \value{
 \code{calc_threshold()} return a value of equivalance threshold,

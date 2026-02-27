@@ -46,6 +46,7 @@
 #'    \item{reject}{Decision of the equivalance test.
 #'      If \code{TRUE}, the test rejects the null of non-equivalance.}
 #' @importFrom Matrix bdiag
+#' @importFrom stats cov
 #' @export
 equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
   ## check input
@@ -122,6 +123,7 @@ equivalence_test <- function(object, alpha = 0.05, threshold = NULL) {
 #' \code{calc_threshold()} computes the data-dependent threshold for the equivalence test.
 #'
 #' @param object An object from \code{\link{ord_did}}, where the estimation is based on the pre-treatment data (\code{pre = TRUE}).
+#' @param omega Significance level for the equivalence threshold. Default is 0.05.
 #' @return \code{calc_threshold()} return a value of equivalance threshold,
 #'  which can be supplied to \code{threshold} argument in \code{\link{equivalence_test}}.
 #' @export
@@ -240,6 +242,7 @@ tv_gradient <- function(v, theta) {
 #' Wald-based Falsification test for the distributional parallel trends assumption
 #' @param object An output from \code{orddid} function.
 #' @importFrom Matrix bdiag
+#' @importFrom stats cov pchisq
 #' @export
 wald_test <- function(object) {
 

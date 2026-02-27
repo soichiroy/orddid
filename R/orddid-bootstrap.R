@@ -20,7 +20,7 @@
 
 #' Block bootstrap sampling: resample clusters with replacement
 #' @noRd
-#' @importFrom dplyr distinct slice_sample inner_join across all_of mutate row_number
+#' @importFrom dplyr %>% distinct slice_sample inner_join across all_of mutate row_number select
 .SampleDf <- function(df, cluster) {
   # Get unique cluster IDs
   cluster_ids <- df %>%
@@ -36,6 +36,8 @@
   return(df_boot)
 }
 
+#' @importFrom stats quantile sd
+#' @noRd
 .ComputeCI <- function(boot_estimates, alpha = 0.05) {
   # Collect bootstrap estimates for diff effects
   diff_effects <- do.call(rbind, boot_estimates$diff_effects)

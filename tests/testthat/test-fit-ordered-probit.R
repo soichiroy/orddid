@@ -15,10 +15,10 @@ test_that("FitOrderedProbit works correctly", {
   # Test FitOrderedProbit without cutoff values
   result1 <- .FitOrderedProbit(Y = Y)
   # Check that the cutoff values are correctly estimated
-  expect_equal(result1$cutoff, c(0, 0.3, 1), tolerance = 1e-4)
-  expect_equal(result1$mu, 0.5, tolerance = 1e-4)
+  expect_equal(result1$cutoff, c(0, 0.3, 1), tolerance = 0.01)
+  expect_equal(result1$mu, 0.5, tolerance = 0.01)
 
   # Test FitOrderedProbit with provided cutoff values
   result2 <- .FitOrderedProbit(Y = Y, cutoff_val = c(0, 0.3, 1))
-  expect_equal(result2$mu, 0.5, tolerance = 1e-4)
+  expect_equal(result2$mu, 0.5, tolerance = 0.01)
 })

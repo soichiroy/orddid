@@ -6,6 +6,9 @@
 \usage{
 plot_equivalence(equivalence_result)
 }
+\arguments{
+\item{equivalence_result}{An output from \code{\link{run_equivalence}}.}
+}
 \description{
 Plot equivalence test result
 }

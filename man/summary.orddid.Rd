@@ -4,13 +4,15 @@
 \alias{summary.orddid}
 \title{Get summaries of ord_did() and equivalence_test() objects.}
 \usage{
-\method{summary}{orddid}(obj, cumulative = TRUE)
+\method{summary}{orddid}(object, cumulative = TRUE, ...)
 }
 \arguments{
-\item{obj}{An object from \code{\link{ord_did}} or \code{\link{equivalence_test}}.}
+\item{object}{An object from \code{\link{ord_did}} or \code{\link{equivalence_test}}.}
 
 \item{cumulative}{A boolean argument to indicate if cumulative effect is reported.
 Default is \code{TRUE}. Only effective for displaying the causal effects.}
+
+\item{...}{Additional arguments (currently unused).}
 }
 \description{
 \code{summary.orddid()} calculates and reports treatment effects and their uncertainties from a \code{\link{ord_did}} object.
