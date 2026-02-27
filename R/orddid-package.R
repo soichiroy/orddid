@@ -15,9 +15,5 @@
 #'  \code{\link{gun_twowave}} and \code{\link{gun_threewave}}.
 "_PACKAGE"
 
-# Suppress R CMD check notes for foreach iterator variables and
-# ggplot2 aes() variables used in NSE
-utils::globalVariables(c(
-  "i", "b",
-  "v", "upper_ci", "lower_ci", "point_estimate"
-))
+# Suppress R CMD check notes for foreach iterator variables (NSE)
+utils::globalVariables(c("i", "b"))

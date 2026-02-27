@@ -177,6 +177,7 @@ run_equivalence <- function(
 #' Plot equivalence test result
 #' @param equivalence_result An output from \code{\link{run_equivalence}}.
 #' @importFrom ggplot2 ggplot aes geom_hline geom_line labs annotate theme_minimal
+#' @importFrom rlang .data
 #' @export
 plot_equivalence <- function(equivalence_result) {
   df_plot <- equivalence_result$estimates
@@ -187,12 +188,12 @@ plot_equivalence <- function(equivalence_result) {
   # Worst case bias with the d_max
   worst_case_bias <- 2 * d_max / equivalence_result$M
 
-  p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = v)) +
+  p <- ggplot2::ggplot(df_plot, ggplot2::aes(x = .data$v)) +
     ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = 'grey') +
-    ggplot2::geom_line(aes(y = upper_ci), linetype = "dashed") +
-    ggplot2::geom_line(aes(y = lower_ci), linetype = "dashed") +
+    ggplot2::geom_line(ggplot2::aes(y = .data$upper_ci), linetype = "dashed") +
+    ggplot2::geom_line(ggplot2::aes(y = .data$lower_ci), linetype = "dashed") +
     ggplot2::geom_line(
-      ggplot2::aes(y = point_estimate),
+      ggplot2::aes(y = .data$point_estimate),
       color = "#006284",
       linewidth = 1.2
     ) +
