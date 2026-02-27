@@ -128,3 +128,37 @@
 #'  data("gun_twowave_cov")
 #'  head(gun_twowave_cov)
 "gun_twowave_cov"
+
+
+#' Two-wave subset panel from Barney and Schaffner (2019)
+#'
+#' A subset of the CCES 2010-12 panel restricted to non-movers (sameres == 1),
+#' with gun attitudes measured in both 2010 and 2012.
+#'
+#' @name gun_twowave_sub
+#' @docType data
+#' @format A data frame with 8512 rows and 8 columns.
+#'   \describe{
+#'      \item{caseid}{Unique id of a respondent.}
+#'      \item{guns12}{Attitudes towards gun control in 2012.}
+#'      \item{guns10}{Attitudes towards gun control in 2010.}
+#'      \item{treat_100mi}{Treatment indicator: 1 if a mass shooting happened within 100 miles.}
+#'      \item{treat10_12_2}{Treatment indicator for 2010-2012 period.}
+#'      \item{partyid3_10}{3-point scale party id, measured in 2010.}
+#'      \item{pds_100mi}{Prior exposure indicator within 100 miles.}
+#'      \item{zip}{Zipcode of a respondent.}
+#'   }
+#' @source
+#' Barney, David; Schaffner, Brian.
+#'  ``Replication Data for: Reexamining the Effect of Mass Shootings on Public Support for Gun Control.''
+#'  \url{https://doi.org/10.7910/DVN/YJQIXP}, Harvard Dataverse, V1, 2018.
+#' @references
+#' Barney, David J., and Brian F. Schaffner.
+#'  "Reexamining the Effect of Mass Shootings on Public Support for Gun Control."
+#'   British Journal of Political Science 49.4 (2019): 1555-1565.
+#'   \url{https://doi.org/10.1017/S0007123418000352}.
+#' @keywords dataset
+#' @examples
+#'  data("gun_twowave_sub")
+#'  head(gun_twowave_sub)
+"gun_twowave_sub"

@@ -15,6 +15,8 @@
 #' @importFrom foreach %dopar%
 #' @importFrom doParallel registerDoParallel
 #' @importFrom parallel makeCluster stopCluster detectCores
+#' @importFrom tibble tibble
+#' @importFrom stats quantile dnorm
 #' @export
 run_equivalence <- function(
   data,
@@ -173,6 +175,7 @@ run_equivalence <- function(
 
 
 #' Plot equivalence test result
+#' @param equivalence_result An output from \code{\link{run_equivalence}}.
 #' @importFrom ggplot2 ggplot aes geom_hline geom_line labs annotate theme_minimal
 #' @export
 plot_equivalence <- function(equivalence_result) {
@@ -208,10 +211,10 @@ plot_equivalence <- function(equivalence_result) {
       x = 0.5,
       y = d_max,
       label = paste0(
-        "Rejection Threshold: ±",
+        "Rejection Threshold: +/-",
         round(d_max, 3),
         " ",
-        "(|Bias| ≤ ",
+        "(|Bias| <= ",
         round(worst_case_bias, 3),
         ")"
       ),

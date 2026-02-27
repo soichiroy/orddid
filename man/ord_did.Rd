@@ -11,36 +11,49 @@ ord_did(
   treat,
   cluster,
   n_boot = 500,
-  use_parallel = FALSE
+  use_parallel = FALSE,
+  method = c("parametric", "semiparametric", "parametric_covariates"),
+  covariates = NULL,
+  fixed_index = 1,
+  n_cores = NULL
 )
 }
 \arguments{
-\item{treat}{A numeric vector of treatment indicator.
-The treatment group should take 1 and the control group should take 0.}
+\item{data}{A data frame containing the variables.}
 
-\item{n_boot}{The number of boostrapt iterations for estimating the variance. Default is \code{n_boot = 500}.}
+\item{outcome}{Character scalar; column name for the outcome variable.}
 
-\item{Ynew}{A numeric vector of ordinal outcome for the post-treatment period.}
+\item{post}{Character scalar; column name for the post-period indicator.}
 
-\item{Yold}{A numeric vector of ordinal outcome for the pre-treatment period.}
+\item{treat}{Character scalar; column name for the treatment indicator.}
 
-\item{id_cluster}{A vector of cluster id.
-If left as \code{NULL}, bootstrap is implemented at the individual level.}
+\item{cluster}{Character scalar; column name for the cluster id.}
 
-\item{cut}{A vector of cutoffs. Two numeric values should be specified. Default is \code{cut = c(0, 1)}.}
+\item{n_boot}{The number of bootstrap iterations. Default is \code{n_boot = 500}.}
 
-\item{pre}{A boolean argument used to indicate if the data comes entirely from pre-treatment periods.
-This should be \code{TRUE} when the output is supplied to \code{\link{equivalence_test}}.}
+\item{use_parallel}{If \code{TRUE}, use parallel computing for bootstrap.}
 
-\item{verbose}{If \code{TRUE}, print the progress of bootstrap iterations.}
+\item{method}{Character; \code{"parametric"} (default) for ordered probit
+without covariates, \code{"semiparametric"} for NPMLE-based semiparametric
+estimation with covariates, or \code{"parametric_covariates"} for ordered
+probit with covariates (uses normal CDF instead of semiparametric F).}
+
+\item{covariates}{Character vector of covariate column names (required for
+\code{method = "semiparametric"} and \code{method = "parametric_covariates"}).
+The first covariate should be a continuous variable with positive Lebesgue
+density (no intercept is added; the cutpoints handle the baseline level).}
+
+\item{fixed_index}{Integer; which column of the covariate matrix to normalize
+in the semiparametric Step 1 (default 1, i.e., the first covariate).}
+
+\item{n_cores}{Integer; number of cores for parallel computing. Default
+\code{NULL} uses all available cores minus one.}
 }
 \value{
-\code{ord_did()} returns a list of class `orddid' containing the following components:
-\item{fit}{A list with the output of the ordinal DID estimators,
-           which contains parameter estimates and predicted probabilities for each category.}
-\item{boot}{A list with the output of bootstraps,
-            which contains parameter estimates and predicted probabilities for each category.}
-\item{boot_params}{A list with all objects generated during the bootstrap step.}
+A list with components:
+\item{inputs}{Function arguments for reproducibility.}
+\item{estimate_effects}{Data frame of category-specific effects with CIs.}
+\item{relative_effects}{Data frame of relative treatment effect bounds with CIs.}
 }
 \description{
 \code{ord_did()} implements the difference-in-differences for the ordinal outcome.

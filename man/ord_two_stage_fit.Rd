@@ -63,11 +63,11 @@ the threshold parameter (alpha) using monotone zero-crossing.
 This function implements the complete two-stage estimation procedure:
 \itemize{
   \item \strong{Stage 1(i):} Isotonic regression (PAVA) to estimate F(X'beta | beta)
-  \item \strong{Stage 1(ii):} Solve moment condition E[X_{-fixed} * (1{Y=1} - F(X'beta))] = 0
-  \item \strong{Stage 2:} Find alpha satisfying E[1 - 1{Y=3} - F(X'beta + alpha)] = 0
+  \item \strong{Stage 1(ii):} Solve moment condition E[X_\{-fixed\} * (1\{Y=1\} - F(X'beta))] = 0
+  \item \strong{Stage 2:} Find alpha satisfying E[1 - 1\{Y=3\} - F(X'beta + alpha)] = 0
 }
 
-The model assumes: P(Y = j | X) = F(X'beta + alpha_{j-1}) - F(X'beta + alpha_{j-2})
+The model assumes: P(Y = j | X) = F(X'beta + alpha_\{j-1\}) - F(X'beta + alpha_\{j-2\})
 where alpha_0 = -Inf, alpha_1 = 0 (normalized), alpha_2 = alpha (estimated), alpha_3 = Inf.
 }
 \examples{
@@ -100,5 +100,5 @@ probs <- fit$predict_probs(X_new)
 Yamauchi, S. (2024). "Simple Semiparametric Estimation of Ordered Response Models."
 }
 \seealso{
-\code{\link{stage1ii_solve}}, \code{\link{EstimateCutoff}}, \code{\link{stage1i_isotonic}}
+\code{stage1ii_solve}, \code{EstimateCutoff}, \code{stage1i_isotonic}
 }

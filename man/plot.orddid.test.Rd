@@ -4,10 +4,10 @@
 \alias{plot.orddid.test}
 \title{Visualizing the result of equivalence_test()}
 \usage{
-\method{plot}{orddid.test}(obj, ylim, fill = TRUE, ...)
+\method{plot}{orddid.test}(x, ylim, fill = TRUE, ...)
 }
 \arguments{
-\item{obj}{An output from \code{equivalence_test()}.}
+\item{x}{An output from \code{equivalence_test()}.}
 
 \item{ylim}{Range of y-axis of the plot.}
 
