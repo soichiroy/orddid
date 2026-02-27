@@ -110,9 +110,9 @@ run_equivalence <- function(
   fit_y01 <- .EstimateLatentOutcomeParams(Ydt = df$Y01, cutoff = fit_y00$cutoff)
   q0 <- .ComputeQFunction(fit0 = fit_y00, fit1 = fit_y01, v_range = v_range)
 
-  # D = 1 group
-  fit_y10 <- .EstimateLatentOutcomeParams(Ydt = df$Y10, cutoff = NULL)
-  fit_y11 <- .EstimateLatentOutcomeParams(Ydt = df$Y11, cutoff = fit_y10$cutoff)
+  # D = 1 group (use shared cutoffs from Y00)
+  fit_y10 <- .EstimateLatentOutcomeParams(Ydt = df$Y10, cutoff = fit_y00$cutoff)
+  fit_y11 <- .EstimateLatentOutcomeParams(Ydt = df$Y11, cutoff = fit_y00$cutoff)
   q1 <- .ComputeQFunction(fit0 = fit_y10, fit1 = fit_y11, v_range = v_range)
 
   # Estimate M
@@ -129,7 +129,7 @@ run_equivalence <- function(
 #' @noRd
 #' @importFrom stats pnorm qnorm
 .ComputeQFunction <- function(fit0, fit1, v_range) {
-  x <- pnorm((fit1$mu - fit0$mu) + fit1$sd * qnorm(v_range))
+  x <- pnorm((fit1$mu - fit0$mu) / fit0$sd + (fit1$sd / fit0$sd) * qnorm(v_range))
   return(x)
 }
 
@@ -146,11 +146,8 @@ run_equivalence <- function(
   treat,
   v_range
 ) {
-  # Resample data with replacement
-  df_boot <- df |>
-    group_by(!!sym(cluster)) |>
-    slice_sample(prop = 1, replace = TRUE) |>
-    ungroup()
+  # Block bootstrap: resample clusters with replacement
+  df_boot <- .SampleDf(df = df, cluster = cluster)
 
   # Compute bootstrap estimate
   df_format <- .orddid_extract_Y_cells(
@@ -167,9 +164,9 @@ run_equivalence <- function(
 #' Compute the identified bounds for M
 #' @noRd
 .EstimateLowerConst <- function(fit0, fit1, v_range) {
-  x <- fit1$sd *
-    dnorm(fit1$mu - fit0$mu + fit1$sd * qnorm(v_range)) /
-    dnorm(qnorm(v_range))
+  b <- fit1$sd / fit0$sd
+  a <- (fit1$mu - fit0$mu) / fit0$sd
+  x <- b * dnorm(a + b * qnorm(v_range)) / dnorm(qnorm(v_range))
   x <- x[is.finite(x)]
   return(min(x))
 }

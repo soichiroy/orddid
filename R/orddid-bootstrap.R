@@ -18,14 +18,21 @@
 }
 
 
-#' Sampling function
+#' Block bootstrap sampling: resample clusters with replacement
 #' @noRd
-#' @importFrom dplyr group_by slice_sample ungroup across all_of
+#' @importFrom dplyr distinct slice_sample inner_join across all_of mutate row_number
 .SampleDf <- function(df, cluster) {
-  df_boot <- df %>%
-    group_by(across(all_of(cluster))) %>%
-    slice_sample(prop = 1, replace = TRUE) %>%
-    ungroup()
+  # Get unique cluster IDs
+  cluster_ids <- df %>%
+    distinct(across(all_of(cluster)))
+  # Resample clusters with replacement
+  sampled_clusters <- cluster_ids %>%
+    slice_sample(n = nrow(cluster_ids), replace = TRUE) %>%
+    mutate(.boot_id = row_number())
+  # Collect all observations from sampled clusters
+  df_boot <- sampled_clusters %>%
+    inner_join(df, by = cluster, relationship = "many-to-many") %>%
+    select(-".boot_id")
   return(df_boot)
 }
 
