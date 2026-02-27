@@ -10,9 +10,15 @@ Authors@R:
 Imports:
     cli,
     crayon,
+    doParallel,
+    dplyr,
+    foreach,
+    ggplot2,
     Matrix,
+    purrr,
     Rcpp,
     RcppArmadillo,
+    rlang,
     VGAM
 LinkingTo:
     Rcpp,
@@ -24,7 +30,6 @@ LazyData: true
 RoxygenNote: 7.3.3
 Suggests:
     testthat (>= 2.1.0),
-    dplyr,
     haven,
     covr,
     icenReg,
