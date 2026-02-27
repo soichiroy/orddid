@@ -2,8 +2,8 @@
 # Tests for Stage 2: Threshold Estimation (alpha)
 # ==============================================================================
 
-test_that("stage2_alpha finds correct threshold", {
-  # Purpose: Verify that stage2_alpha correctly estimates the threshold parameter
+test_that("EstimateCutoff finds correct threshold", {
+  # Purpose: Verify that EstimateCutoff correctly estimates the threshold parameter
   #          by solving the moment condition E[1 - 1{Y=3} - F(X'beta + alpha)] = 0
   #
   # What is tested:
@@ -26,7 +26,7 @@ test_that("stage2_alpha finds correct threshold", {
   Y <- cut(latent, breaks = c(-Inf, 0, alpha_true, Inf), labels = FALSE)
   
   Fhat <- stage1i_isotonic(Y, X, beta_true)
-  result <- stage2_alpha(Y, X, beta_true, Fhat, verbose = FALSE)
+  result <- EstimateCutoff(Y, X, beta_true, Fhat, verbose = FALSE)
   
   # Check estimate is valid
   expect_true(is.numeric(result$alpha))
@@ -43,7 +43,7 @@ test_that("stage2_alpha finds correct threshold", {
   expect_lt(abs(result$alpha - alpha_true), 0.5)
 })
 
-test_that("stage2_alpha handles boundary cases", {
+test_that("EstimateCutoff handles boundary cases", {
   # Purpose: Verify robust behavior when data has no observations in category 3
   #          (boundary case where alpha may be at the lower bound)
   #
@@ -65,14 +65,14 @@ test_that("stage2_alpha handles boundary cases", {
   Y <- pmin(cut(latent, breaks = c(-Inf, 0, Inf), labels = FALSE), 2)
   
   Fhat <- stage1i_isotonic(Y, X, beta)
-  result <- stage2_alpha(Y, X, beta, Fhat, verbose = FALSE)
+  result <- EstimateCutoff(Y, X, beta, Fhat, verbose = FALSE)
   
   # Check valid solution returned
   expect_true(result$method %in% c("boundary", "uniroot", "grid-cross", "grid-min"))
   expect_true(is.finite(result$alpha))
 })
 
-test_that("stage2_alpha with specified bounds", {
+test_that("EstimateCutoff with specified bounds", {
   # Purpose: Verify that user-specified search bounds are respected
   #
   # What is tested:
@@ -92,7 +92,7 @@ test_that("stage2_alpha with specified bounds", {
   
   Fhat <- stage1i_isotonic(Y, X, beta)
   
-  result <- stage2_alpha(
+  result <- EstimateCutoff(
     Y, X, beta, Fhat,
     alpha_lower = 0.5,
     alpha_upper = 3,
@@ -144,7 +144,7 @@ test_that("predict_probs_3cat produces valid probabilities", {
   expect_equal(rowSums(probs), rep(1, n), tolerance = 1e-6)
 })
 
-test_that("stage2_alpha grid search fallback works", {
+test_that("EstimateCutoff grid search fallback works", {
   # Purpose: Verify that grid search fallback works when uniroot fails or
   #          is not applicable (wide bounds, difficult objective function)
   #
@@ -167,7 +167,7 @@ test_that("stage2_alpha grid search fallback works", {
   
   Fhat <- stage1i_isotonic(Y, X, beta)
   
-  result <- stage2_alpha(
+  result <- EstimateCutoff(
     Y, X, beta, Fhat,
     alpha_lower = 0,
     alpha_upper = 10,

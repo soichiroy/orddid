@@ -84,3 +84,47 @@
 #'  data("gun_threewave")
 #'  gun_threewave
 "gun_threewave"
+
+
+#' Two-wave panel with covariates
+#'
+#' A subset of approximately 2000 individuals from the CCES 2010-12 panel,
+#' augmented with IRT ideology scores and demographic variables.
+#' The ideology scores are estimated via a two-parameter logistic (2PL) IRT model
+#' fitted to CCES policy items.  This dataset is designed for demonstrating the
+#' semiparametric estimator, which requires at least one continuous covariate.
+#'
+#' @name gun_twowave_cov
+#' @docType data
+#' @format A data frame with 4000 rows and 10 columns.
+#'   \describe{
+#'      \item{caseid}{Unique id of a respondent.}
+#'      \item{year}{Year of the response (2010 or 2012).}
+#'      \item{guns}{Attitudes towards gun control: (1) "Less Strict", (2) "Kept As They Are", (3) "More Strict".}
+#'      \item{treat_25mi}{Treatment indicator: 1 if a mass shooting happened within 25 miles.}
+#'      \item{treat_100mi}{Treatment indicator: 1 if a mass shooting happened within 100 miles.}
+#'      \item{reszip}{Zipcode of a respondent.}
+#'      \item{ideology}{First-dimension IRT ideology score (continuous).}
+#'      \item{ideology2}{Second-dimension IRT ideology score (continuous).}
+#'      \item{female}{Binary indicator for female respondent.}
+#'      \item{educ}{Education level (integer scale).}
+#'   }
+#' @source
+#' Barney, David; Schaffner, Brian.
+#'  ``Replication Data for: Reexamining the Effect of Mass Shootings on Public Support for Gun Control.''
+#'  \url{https://doi.org/10.7910/DVN/YJQIXP}, Harvard Dataverse, V1, 2018.
+#'
+#'  Ansolabehere, Stephen; Schaffner, Brian.
+#'   ``2010 - 2012 CCES Panel Study.''
+#'   \url{https://doi.org/10.7910/DVN/24416}, Harvard Dataverse, V4, 2014.
+#'
+#' @references
+#' Barney, David J., and Brian F. Schaffner.
+#'  "Reexamining the Effect of Mass Shootings on Public Support for Gun Control."
+#'   British Journal of Political Science 49.4 (2019): 1555-1565.
+#'   \url{https://doi.org/10.1017/S0007123418000352}.
+#' @keywords dataset
+#' @examples
+#'  data("gun_twowave_cov")
+#'  head(gun_twowave_cov)
+"gun_twowave_cov"
