@@ -4,36 +4,56 @@
 \alias{ord_did}
 \title{Ordinal Difference-in-Differences for Panel Data}
 \usage{
-ord_did(Ynew, Yold, treat, id_cluster = NULL, cut = c(0, 1),
-  n_boot = 500, pre = FALSE, verbose = FALSE)
+ord_did(
+  data,
+  outcome,
+  post,
+  treat,
+  cluster,
+  n_boot = 500,
+  use_parallel = FALSE,
+  method = c("parametric", "semiparametric", "parametric_covariates"),
+  covariates = NULL,
+  fixed_index = 1,
+  n_cores = NULL
+)
 }
 \arguments{
-\item{Ynew}{A numeric vector of ordinal outcome for the post-treatment period.}
+\item{data}{A data frame containing the variables.}
 
-\item{Yold}{A numeric vector of ordinal outcome for the pre-treatment period.}
+\item{outcome}{Character scalar; column name for the outcome variable.}
 
-\item{treat}{A numeric vector of treatment indicator.
-The treatment group should take 1 and the control group should take 0.}
+\item{post}{Character scalar; column name for the post-period indicator.}
 
-\item{id_cluster}{A vector of cluster id.
-If left as \code{NULL}, bootstrap is implemented at the individual level.}
+\item{treat}{Character scalar; column name for the treatment indicator.}
 
-\item{cut}{A vector of cutoffs. Two numeric values should be specified. Default is \code{cut = c(0, 1)}.}
+\item{cluster}{Character scalar; column name for the cluster id.}
 
-\item{n_boot}{The number of boostrapt iterations for estimating the variance. Default is \code{n_boot = 500}.}
+\item{n_boot}{The number of bootstrap iterations. Default is \code{n_boot = 500}.}
 
-\item{pre}{A boolean argument used to indicate if the data comes entirely from pre-treatment periods.
-This should be \code{TRUE} when the output is supplied to \code{\link{equivalence_test}}.}
+\item{use_parallel}{If \code{TRUE}, use parallel computing for bootstrap.}
 
-\item{verbose}{If \code{TRUE}, print the progress of bootstrap iterations.}
+\item{method}{Character; \code{"parametric"} (default) for ordered probit
+without covariates, \code{"semiparametric"} for NPMLE-based semiparametric
+estimation with covariates, or \code{"parametric_covariates"} for ordered
+probit with covariates (uses normal CDF instead of semiparametric F).}
+
+\item{covariates}{Character vector of covariate column names (required for
+\code{method = "semiparametric"} and \code{method = "parametric_covariates"}).
+The first covariate should be a continuous variable with positive Lebesgue
+density (no intercept is added; the cutpoints handle the baseline level).}
+
+\item{fixed_index}{Integer; which column of the covariate matrix to normalize
+in the semiparametric Step 1 (default 1, i.e., the first covariate).}
+
+\item{n_cores}{Integer; number of cores for parallel computing. Default
+\code{NULL} uses all available cores minus one.}
 }
 \value{
-\code{ord_did()} returns a list of class `orddid' containing the following components:
-\item{fit}{A list with the output of the ordinal DID estimators,
-           which contains parameter estimates and predicted probabilities for each category.}
-\item{boot}{A list with the output of bootstraps,
-            which contains parameter estimates and predicted probabilities for each category.}
-\item{boot_params}{A list with all objects generated during the bootstrap step.}
+A list with components:
+\item{inputs}{Function arguments for reproducibility.}
+\item{estimate_effects}{Data frame of category-specific effects with CIs.}
+\item{relative_effects}{Data frame of relative treatment effect bounds with CIs.}
 }
 \description{
 \code{ord_did()} implements the difference-in-differences for the ordinal outcome.
@@ -50,15 +70,27 @@ data("gun_twowave")
 ## run
 ## fit the ordinal DID
 set.seed(1234)
-fit <- ord_did(
-  Ynew = gun_twowave \%>\% filter(year == 2012) \%>\% pull(guns),
-  Yold = gun_twowave \%>\% filter(year == 2010) \%>\% pull(guns),
-  treat = gun_twowave \%>\% filter(year == 2012) \%>\% pull(treat_100mi),
-  id_cluster = gun_twowave \%>\% filter(year == 2010) \%>\% pull(reszip),
-  n_boot = 10,
-  pre = FALSE,
-  verbose = FALSE
-)
+treated_id <- gun_twowave \%>\%
+  filter(treat_25mi == 1) \%>\%
+  select(caseid, treated_group = treat_25mi)
+dat_use <- gun_twowave \%>\%
+  left_join(treated_id, by = "caseid") \%>\%
+  mutate(
+    post = ifelse(year == 2012, TRUE, FALSE),
+    treated = ifelse(!is.na(treated_group), TRUE, FALSE)
+  )
+
+dat_use \%>\%
+  group_by(pid3) \%>\%
+  group_map(
+    ~ ord_did(
+      data = .x,
+      outcome = "guns",
+      post = "post",
+      treat = "treated",
+      cluster = "caseid"
+    )
+  )
 
 ## view summary of the output
 ## non-cumulative effects

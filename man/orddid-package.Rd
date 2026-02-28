@@ -22,6 +22,6 @@ In addition to the above functions, \code{orddid} packages contains two example 
  \code{\link{gun_twowave}} and \code{\link{gun_threewave}}.
 }
 \author{
-\strong{Maintainer}: Soichiro Yamauchi \email{syamauchi@g.harvard.edu} (0000-0003-0554-2717)
+\strong{Maintainer}: Soichiro Yamauchi \email{soichiro@ucsd.edu} (\href{https://orcid.org/0000-0003-0554-2717}{ORCID})
 
 }

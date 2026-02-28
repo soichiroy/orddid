@@ -1,21 +1,22 @@
 
 #' Get summaries of ord_did() and equivalence_test() objects.
-#' 
+#'
 #' \code{summary.orddid()} calculates and reports treatment effects and their uncertainties from a \code{\link{ord_did}} object.
 #' \code{summary.orddid()} reports summaries of an equivalance test when an \code{\link{equivalence_test}} object is provided.
 #'
-#' @param obj An object from \code{\link{ord_did}} or \code{\link{equivalence_test}}.
+#' @param object An object from \code{\link{ord_did}} or \code{\link{equivalence_test}}.
 #' @param cumulative A boolean argument to indicate if cumulative effect is reported.
 #'    Default is \code{TRUE}. Only effective for displaying the causal effects.
+#' @param ... Additional arguments (currently unused).
 #' @export
-summary.orddid <- function(obj, cumulative = TRUE) {
+summary.orddid <- function(object, cumulative = TRUE, ...) {
 
-  if ("orddid.fit" %in% class(obj)) {
-    res <- summarise_ord_did(obj, cumulative)
+  if ("orddid.fit" %in% class(object)) {
+    res <- summarise_ord_did(object, cumulative)
     ses <- sqrt(do.call("rbind", res$Var))
     cis <- do.call("rbind", res$CI)
     del <- unlist(res$Delta)
-    J   <- attr(obj, "n_choice")
+    J   <- attr(object, "n_choice")
 
     # create a table for output
     tab <- cbind(del, ses, cis)
@@ -29,8 +30,8 @@ summary.orddid <- function(obj, cumulative = TRUE) {
     }
 
     class(tab)    <- c('summary.orddid', 'summary.orddid.fit')
-  } else if ('orddid.test' %in% class(obj)) {
-    tab           <- summarise_equivalence_test(obj)
+  } else if ('orddid.test' %in% class(object)) {
+    tab           <- summarise_equivalence_test(object)
     class(tab)    <- c('summary.orddid', 'summary.orddid.test')
   }
 
@@ -40,26 +41,27 @@ summary.orddid <- function(obj, cumulative = TRUE) {
 
 #' @importFrom cli cat_rule
 #' @export
-print.summary.orddid <- function(obj) {
-  if ("summary.orddid.fit" %in% class(obj)) {
-    class(obj) <- NULL
+print.summary.orddid <- function(x, ...) {
+  if ("summary.orddid.fit" %in% class(x)) {
+    class(x) <- NULL
     cat_rule(left = crayon::bold("Effect Estimates"))
-    print.default(obj, quote = FALSE, right = TRUE, digits = 3)
-  } else if ('summary.orddid.test' %in% class(obj)) {
-    class(obj) <- NULL
+    print.default(x, quote = FALSE, right = TRUE, digits = 3)
+  } else if ('summary.orddid.test' %in% class(x)) {
+    class(x) <- NULL
     cat_rule(left = crayon::bold("Equivalence Test"))
-    tab <- obj$tab
-    meg <- obj$message
+    tab <- x$tab
+    meg <- x$message
     print.default(tab, quote = FALSE, right = TRUE, digits = 3)
     cat("\n")
     print.default(meg, quote = FALSE, right = TRUE, digits = 3)
 
   }
 
-  invisible(obj)
+  invisible(x)
 }
 
 #' Summarise function for ord_did()
+#' @importFrom stats quantile var
 #' @keywords internal
 summarise_ord_did <- function(obj, cumulative) {
   if ("orddid.fit" %in% class(obj)) {

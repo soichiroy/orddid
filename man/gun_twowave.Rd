@@ -4,7 +4,8 @@
 \name{gun_twowave}
 \alias{gun_twowave}
 \title{Two-wave panel from Barney and Schaffner (2019)}
-\format{An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) with 33106 rows and 11 columns.
+\format{
+An object of class \code{tbl_df} (inherits from \code{tbl}, \code{data.frame}) with 33106 rows and 11 columns.
   \describe{
      \item{caseid}{Unique id of a respondent.}
      \item{year}{Year of the response.}
@@ -18,7 +19,8 @@
      \item{pid7}{7-point scale party id, measured in 2010.}
      \item{treat_25mi}{Treatment indicator which takes 1 if the mass shootings happened within 25 miles.}
      \item{treat_100mi}{Treatment indicator which takes 1 if the mass shootings happened within 100 miles.}
-   }}
+   }
+}
 \source{
 Barney, David; Schaffner, Brian. 
  ``Replication Data for: Reexamining the Effect of Mass Shootings on Public Support for Gun Control.''

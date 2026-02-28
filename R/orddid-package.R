@@ -15,8 +15,5 @@
 #'  \code{\link{gun_twowave}} and \code{\link{gun_threewave}}.
 "_PACKAGE"
 
-
-#' @useDynLib orddid
-#' @importFrom Rcpp sourceCpp
-#' @exportPattern "^[[:alpha:]]+"
-NULL
+# Suppress R CMD check notes for foreach iterator variables (NSE)
+utils::globalVariables(c("i", "b"))
