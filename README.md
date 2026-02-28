@@ -78,16 +78,16 @@ fit$estimate_effects
 #> # A tibble: 3 × 4
 #>   category   effect lower_ci upper_ci
 #>      <int>    <dbl>    <dbl>    <dbl>
-#> 1        1  0.00562 -0.00514  0.0227 
-#> 2        2 -0.00993 -0.0328   0.00731
-#> 3        3  0.00431 -0.00817  0.0212
+#> 1        1  0.00562 -0.00264  0.0129 
+#> 2        2 -0.00993 -0.0246   0.00341
+#> 3        3  0.00431 -0.00650  0.0150
 
 ## bounds on the relative treatment effect
 fit$relative_effects
 #> # A tibble: 1 × 5
 #>   effect_lb effect_ub lower_ci upper_ci c_crit
 #>       <dbl>     <dbl>    <dbl>    <dbl>  <dbl>
-#> 1    -0.155     0.158   -0.172    0.177   1.64
+#> 1    -0.155     0.158   -0.168    0.173   1.64
 ```
 
 ## Example: Semiparametric Estimation with Covariates
@@ -204,6 +204,7 @@ plot_equivalence(eq_result)
 
 ## References
 
-Yamauchi, Soichiro (2026+). “[Difference-in-Differences for Ordinal Outcomes:
-Application to the Effect of Mass Shootings on Attitudes toward Gun
+Yamauchi, Soichiro (2026+). “[Difference-in-Differences for Ordinal
+Outcomes: Application to the Effect of Mass Shootings on Attitudes
+toward Gun
 Control](https://soichiroy.github.io/files/papers/did_ordinal_paper2.pdf).”
