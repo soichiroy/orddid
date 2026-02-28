@@ -189,6 +189,6 @@ plot_equivalence(eq_result)
 
 ## References
 
-Yamauchi, Soichiro.
+Yamauchi, Soichiro (2026+).
 "[Difference-in-Differences for Ordinal Outcomes: Application to the
 Effect of Mass Shootings on Attitudes toward Gun Control](https://soichiroy.github.io/files/papers/did_ordinal_paper2.pdf)."

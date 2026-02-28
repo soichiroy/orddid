@@ -12,7 +12,9 @@ coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)]
 status](https://github.com/soichiroy/orddid/workflows/R-CMD-check/badge.svg)](https://github.com/soichiroy/orddid/actions)
 <!-- badges: end -->
 
-R package for difference-in-differences with ordinal outcomes (Yamauchi 2026+). 
+R package for difference-in-differences with ordinal outcomes (Yamauchi
+2026+).
+
 - Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
 - Package manual:
   [PDF](https://soichiroy.github.io/files/packages/orddid_0_1_0.pdf)
