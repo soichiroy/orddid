@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![](https://img.shields.io/badge/devel%20version-0.1.0-blue.svg)](https://github.com/soichiroy/orddid)
+[![](https://img.shields.io/badge/devel%20version-1.1.0-blue.svg)](https://github.com/soichiroy/orddid)
 [![Codecov test
 coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)](https://codecov.io/gh/soichiroy/orddid?branch=master)
 [![R build
