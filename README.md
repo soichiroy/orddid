@@ -16,8 +16,6 @@ R package for difference-in-differences with ordinal outcomes (Yamauchi
 2026+).
 
 - Author: [Soichiro Yamauchi](https://soichiroy.github.io/)
-- Package manual:
-  [PDF](https://soichiroy.github.io/files/packages/orddid_0_1_0.pdf)
 
 ## Installation
 
