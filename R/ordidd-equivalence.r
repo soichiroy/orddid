@@ -286,6 +286,15 @@ run_equivalence_zeta <- function(
     treat = treat
   )
 
+  # Number of outcome categories J. Used downstream to drop bootstrap
+  # iterations whose resampled cells happen to omit one of the J categories
+  # (those iterations would otherwise mis-specify the cutoffs and contaminate
+  # the percentile CI). See PR #8 for the matching change in the parametric
+  # path.
+  n_categories <- length(unique(c(
+    df_format$Y00, df_format$Y01, df_format$Y10, df_format$Y11
+  )))
+
   # Point estimate of zeta_j
   point_estimate <- .GetPointEstimateZeta(df = df_format, link = link)
 
@@ -327,7 +336,8 @@ run_equivalence_zeta <- function(
           outcome = outcome,
           post = post,
           treat = treat,
-          link = link
+          link = link,
+          n_categories = n_categories
         ),
         error = function(e) rep(NA_real_, length(point_estimate))
       )
@@ -398,7 +408,8 @@ run_equivalence_zeta <- function(
   outcome,
   post,
   treat,
-  link = c("probit", "logit")
+  link = c("probit", "logit"),
+  n_categories = NULL
 ) {
   link <- match.arg(link)
   df_boot <- .SampleDf(df = df, cluster = cluster)
@@ -408,6 +419,13 @@ run_equivalence_zeta <- function(
     post = post,
     treat = treat
   )
+  if (!is.null(n_categories)) {
+    if (any(vapply(df_format, function(y) length(unique(y)),
+                   FUN.VALUE = integer(1)) < n_categories)) {
+      stop("bootstrap sample is missing one or more outcome categories",
+           call. = FALSE)
+    }
+  }
   .GetPointEstimateZeta(df = df_format, link = link)
 }
 
