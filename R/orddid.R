@@ -27,6 +27,10 @@
 #'   regression dependence on the joint distribution of the post-treatment
 #'   potential outcomes and computes the tighter feasible bounds by linear
 #'   programming. By default, both are returned.
+#' @param link Character; \code{"probit"} (default) selects the standard normal
+#'   CDF as the base distribution for the latent location-scale model.
+#'   \code{"logit"} selects the standard logistic CDF instead. Currently only
+#'   supported with \code{method = "parametric"}.
 #' @return A list with components:
 #' \item{inputs}{Function arguments for reproducibility.}
 #' \item{estimate_effects}{Data frame of category-specific effects with CIs.}

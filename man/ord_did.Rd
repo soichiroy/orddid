@@ -57,6 +57,11 @@ Lu, Zhang, and Ding (2020). \code{"stochastic_dominance"} imposes positive
 regression dependence on the joint distribution of the post-treatment
 potential outcomes and computes the tighter feasible bounds by linear
 programming. By default, both are returned.}
+
+\item{link}{Character; \code{"probit"} (default) selects the standard normal
+CDF as the base distribution for the latent location-scale model.
+\code{"logit"} selects the standard logistic CDF instead. Currently only
+supported with \code{method = "parametric"}.}
 }
 \value{
 A list with components:
