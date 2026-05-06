@@ -15,7 +15,9 @@ ord_did(
   method = c("parametric", "semiparametric", "parametric_covariates"),
   covariates = NULL,
   fixed_index = 1,
-  n_cores = NULL
+  n_cores = NULL,
+  tau_assumption = c("none", "stochastic_dominance"),
+  link = c("probit", "logit")
 )
 }
 \arguments{
@@ -48,6 +50,13 @@ in the semiparametric Step 1 (default 1, i.e., the first covariate).}
 
 \item{n_cores}{Integer; number of cores for parallel computing. Default
 \code{NULL} uses all available cores minus one.}
+
+\item{tau_assumption}{Character vector controlling how the relative-effect
+bounds are computed. \code{"none"} uses the unconstrained sharp bounds of
+Lu, Zhang, and Ding (2020). \code{"stochastic_dominance"} imposes positive
+regression dependence on the joint distribution of the post-treatment
+potential outcomes and computes the tighter feasible bounds by linear
+programming. By default, both are returned.}
 }
 \value{
 A list with components:
