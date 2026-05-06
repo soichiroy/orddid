@@ -122,6 +122,14 @@ ord_did <- function(
     treat = treat
   )
 
+  # Number of outcome categories J in the full sample. Used downstream to
+  # drop bootstrap iterations whose resampled cells happen to omit one of
+  # the J categories — those iterations would otherwise mis-specify the
+  # cutoffs and produce pathological zeta estimates.
+  n_categories <- length(unique(c(
+    df_format$Y00, df_format$Y01, df_format$Y10, df_format$Y11
+  )))
+
   # Compute point estimate
   point_estimate <- .GetPointEstimate(
     df = df_format,
@@ -160,7 +168,8 @@ ord_did <- function(
           post = post,
           treat = treat,
           tau_assumption = tau_assumption,
-          link = link
+          link = link,
+          n_categories = n_categories
         ),
         error = function(e) NULL
       )

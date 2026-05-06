@@ -1,7 +1,8 @@
 
 .RunBootstrap <- function(df, cluster, outcome, post, treat,
                           tau_assumption = "none",
-                          link = c("probit", "logit")) {
+                          link = c("probit", "logit"),
+                          n_categories = NULL) {
   link <- match.arg(link)
 
   # Bootstrap
@@ -14,6 +15,18 @@
     post = post,
     treat = treat
   )
+
+  # Drop bootstrap iterations where any cell is missing one of the J outcome
+  # categories. Without this, .FitOrderedProbit infers the number of cutoffs
+  # from length(unique(Y)) in that cell and fits a misaligned model, which
+  # produces pathological zeta estimates that contaminate the percentile CI.
+  if (!is.null(n_categories)) {
+    if (any(vapply(df_format, function(y) length(unique(y)),
+                   FUN.VALUE = integer(1)) < n_categories)) {
+      stop("bootstrap sample is missing one or more outcome categories",
+           call. = FALSE)
+    }
+  }
 
   # Estimation
   estimate <- .GetPointEstimate(
