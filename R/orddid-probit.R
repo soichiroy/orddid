@@ -1,4 +1,19 @@
-#' Fit Ordinal Probit Regression via MLE
+#' Base CDF dispatcher for the ordinal latent variable
+#'
+#' Returns the CDF F(.) of the standard base distribution implied by `link`.
+#' `"probit"` uses the standard normal; `"logit"` uses the standard logistic.
+#' Used by both the MLE objective and the predicted-probability calculation.
+#' @keywords internal
+#' @noRd
+.BaseCDF <- function(x, link = c("probit", "logit")) {
+  link <- match.arg(link)
+  switch(link,
+    probit = stats::pnorm(x),
+    logit  = stats::plogis(x)
+  )
+}
+
+#' Fit Ordinal Probit/Logit Regression via MLE
 #'
 #' @param Y A vector of outcome
 #' @param init A vector of initial values. The first element is for the mean,
@@ -6,9 +21,14 @@
 #'   values are used: 0 for mean, 1 for standard deviation.
 #' @param cutoff_val A vector of cutoff values. If NULL, the cutoffs are
 #'   estimated fix the first cutoff is fixed at 1.
+#' @param link Character; `"probit"` (default, standard normal F) or `"logit"`
+#'   (standard logistic F).
 #' @importFrom stats runif optim
 #' @keywords internal
-.FitOrderedProbit <- function(Y, init = NULL, cutoff_val = NULL) {
+.FitOrderedProbit <- function(Y, init = NULL, cutoff_val = NULL,
+                              link = c("probit", "logit")) {
+  link <- match.arg(link)
+
   # Set initial values
   if (is.null(init)) {
     par_init <- c(0, 1) # mu and sd
@@ -18,12 +38,13 @@
     par_init <- c(par_init, runif(length(unique(Y)) - 2))
   }
 
-  ## fit ordered probit
+  ## fit ordered probit / logit
   fit <- optim(
     par = par_init,
     fn = .LogLikelihoodProbit,
     Y = Y,
     cutoff_val = cutoff_val,
+    link = link,
     method = 'BFGS'
   )
 
@@ -42,11 +63,14 @@
   ))
 }
 
-#' Log-likelihood Function for ordered Probit
+#' Log-likelihood Function for ordered Probit/Logit
 #' @keywords internal
 #' @importFrom purrr map_dbl
 #' @noRd
-.LogLikelihoodProbit <- function(par, Y, cutoff_val = NULL) {
+.LogLikelihoodProbit <- function(par, Y, cutoff_val = NULL,
+                                 link = c("probit", "logit")) {
+  link <- match.arg(link)
+
   # Extract parameters
   # * The first element of par is mean: mu_dt
   # * The second element is standard deviation (log-scale): sd_dt
@@ -71,7 +95,8 @@
   cats <- sort(unique(Y))
   loglikelihood <- purrr::map_dbl(seq_along(cats), function(k) {
     nj <- sum(Y == cats[k])
-    nj * log(pnorm((cut[k + 1] - mu_y) / sd_y) - pnorm((cut[k] - mu_y) / sd_y))
+    nj * log(.BaseCDF((cut[k + 1] - mu_y) / sd_y, link = link) -
+             .BaseCDF((cut[k]     - mu_y) / sd_y, link = link))
   })
 
   # Return the negative log-likelihood for minimization

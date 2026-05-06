@@ -44,9 +44,85 @@
 #' p0 <- c(0.4, 0.4, 0.2)  # Pr{Y(0)=0,1,2}
 #' bound_gamma_ordinal(p1, p0)
 #'
+#' @param tau_assumption Character vector. \code{"none"} uses the closed-form
+#'   sharp bounds from Lu, Zhang, and Ding (2020). \code{"stochastic_dominance"}
+#'   imposes positive regression dependence on the joint distribution of
+#'   \eqn{(Y(1), Y(0))} and computes the resulting bounds by linear programming.
+#'
 #' @noRd
 #' @keywords internal
-.ComputeRelativeEffect <- function(p1, p0) {
+.ComputeRelativeEffect <- function(p1, p0,
+                                   tau_assumption = "none") {
+  tau_assumption <- .orddid_match_tau_assumptions(tau_assumption)
+  probs <- .orddid_validate_relative_effect_probs(p1 = p1, p0 = p0)
+
+  out <- lapply(tau_assumption, function(assump) {
+    bounds <- tryCatch(
+      {
+        if (assump == "none") {
+          .ComputeRelativeEffectClosedForm(p1 = probs$p1, p0 = probs$p0)
+        } else {
+          .ComputeRelativeEffectStochasticDominance(p1 = probs$p1, p0 = probs$p0)
+        }
+      },
+      error = function(e) c(lower = NA_real_, upper = NA_real_)
+    )
+
+    tibble::tibble(
+      tau_assumption = assump,
+      effect_lb = bounds[["lower"]],
+      effect_ub = bounds[["upper"]],
+      status = if (all(is.finite(bounds))) "ok" else "infeasible"
+    )
+  })
+
+  dplyr::bind_rows(out)
+}
+
+
+.orddid_match_tau_assumptions <- function(
+  tau_assumption = "none"
+) {
+  unique(match.arg(
+    tau_assumption,
+    choices = c("none", "stochastic_dominance"),
+    several.ok = TRUE
+  ))
+}
+
+
+.orddid_validate_relative_effect_probs <- function(p1, p0, tol = 1e-10) {
+  if (!is.numeric(p1) || !is.numeric(p0)) {
+    stop("p1 and p0 must be numeric probability vectors.", call. = FALSE)
+  }
+  if (length(p1) != length(p0)) {
+    stop("p1 and p0 must have the same length.", call. = FALSE)
+  }
+  if (length(p1) < 2) {
+    stop("Relative-effect bounds require at least two outcome categories.",
+         call. = FALSE)
+  }
+  if (any(!is.finite(p1)) || any(!is.finite(p0))) {
+    stop("p1 and p0 must contain only finite values.", call. = FALSE)
+  }
+  if (any(p1 < -tol) || any(p0 < -tol)) {
+    stop("p1 and p0 must be nonnegative probability vectors.", call. = FALSE)
+  }
+
+  p1[p1 < 0] <- 0
+  p0[p0 < 0] <- 0
+
+  s1 <- sum(p1)
+  s0 <- sum(p0)
+  if (s1 <= tol || s0 <= tol) {
+    stop("p1 and p0 must each sum to a positive value.", call. = FALSE)
+  }
+
+  list(p1 = p1 / s1, p0 = p0 / s0)
+}
+
+
+.ComputeRelativeEffectClosedForm <- function(p1, p0) {
   J <- length(p1)
 
   # Tail sums with zero padding at the end: tail[i] = sum_{i..J}
@@ -81,6 +157,93 @@
   }
 
   c(lower = max(xis), upper = min(deltas))
+}
+
+
+.ComputeRelativeEffectStochasticDominance <- function(p1, p0) {
+  J <- length(p1)
+  idx_mat <- matrix(seq_len(J * J), nrow = J, ncol = J)
+  obj <- as.vector(sign(row(idx_mat) - col(idx_mat)))
+
+  const_rows <- list()
+  const_dir <- character()
+  const_rhs <- numeric()
+
+  add_constraint <- function(coeffs, dir, rhs) {
+    const_rows[[length(const_rows) + 1L]] <<- coeffs
+    const_dir <<- c(const_dir, dir)
+    const_rhs <<- c(const_rhs, rhs)
+  }
+
+  for (j in seq_len(J)) {
+    coeffs <- numeric(J * J)
+    coeffs[idx_mat[j, ]] <- 1
+    add_constraint(coeffs, "==", p1[j])
+  }
+
+  for (k in seq_len(J)) {
+    coeffs <- numeric(J * J)
+    coeffs[idx_mat[, k]] <- 1
+    add_constraint(coeffs, "==", p0[k])
+  }
+
+  # The appendix states positive regression dependence with upper-tail
+  # inequalities for all ordered category pairs. The LP below uses the
+  # equivalent adjacent lower-tail form: F_{Y(1)|Y(0)=low}(r) >=
+  # F_{Y(1)|Y(0)=high}(r). Adjacent stochastic-order constraints imply the
+  # all-pair version by transitivity, and lower tails are complements of the
+  # appendix upper tails.
+  for (k_low in seq_len(J - 1L)) {
+    k_high <- k_low + 1L
+    if (p0[k_low] <= 0 || p0[k_high] <= 0) next
+
+    for (threshold in seq_len(J - 1L)) {
+      coeffs <- numeric(J * J)
+      coeffs[idx_mat[seq_len(threshold), k_low]] <- p0[k_high]
+      coeffs[idx_mat[seq_len(threshold), k_high]] <- -p0[k_low]
+      add_constraint(coeffs, ">=", 0)
+    }
+  }
+
+  for (j_low in seq_len(J - 1L)) {
+    j_high <- j_low + 1L
+    if (p1[j_low] <= 0 || p1[j_high] <= 0) next
+
+    for (threshold in seq_len(J - 1L)) {
+      coeffs <- numeric(J * J)
+      coeffs[idx_mat[j_low, seq_len(threshold)]] <- p1[j_high]
+      coeffs[idx_mat[j_high, seq_len(threshold)]] <- -p1[j_low]
+      add_constraint(coeffs, ">=", 0)
+    }
+  }
+
+  const_mat <- do.call(rbind, c(const_rows, list(diag(J * J))))
+  const_dir <- c(const_dir, rep(">=", J * J))
+  const_rhs <- c(const_rhs, rep(0, J * J))
+
+  lp_upper <- lpSolve::lp(
+    direction = "max",
+    objective.in = obj,
+    const.mat = const_mat,
+    const.dir = const_dir,
+    const.rhs = const_rhs
+  )
+  lp_lower <- lpSolve::lp(
+    direction = "min",
+    objective.in = obj,
+    const.mat = const_mat,
+    const.dir = const_dir,
+    const.rhs = const_rhs
+  )
+
+  if (lp_upper$status != 0 || lp_lower$status != 0) {
+    stop(
+      "The stochastic_dominance tau assumption is infeasible for the supplied marginals.",
+      call. = FALSE
+    )
+  }
+
+  c(lower = lp_lower$objval, upper = lp_upper$objval)
 }
 
 
