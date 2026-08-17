@@ -18,12 +18,15 @@
 #' @param Ftilde  smoothed CDF function
 #' @param X11     design matrix for treated post-treatment units
 #' @param Y11     observed outcomes for treated post-treatment units
+#' @param tau_assumption relative-effect bound assumptions passed to
+#'   \code{.ComputeRelativeEffect()}
 #' @return list with zeta, tau, obs_probs, cf_probs_avg
 #' @keywords internal
 .compute_semiparametric_effects <- function(beta_00, beta_01, xi_01,
                                             beta_10, xi_10,
                                             kappa, Ftilde,
-                                            X11, Y11) {
+                                            X11, Y11,
+                                            tau_assumption = "none") {
 
   n1 <- nrow(X11)
   J  <- length(kappa) - 1
@@ -55,7 +58,11 @@
   cf_avg <- colMeans(cf_probs)
   zeta   <- obs_probs - cf_avg
 
-  tau <- .ComputeRelativeEffect(obs_probs, cf_avg)
+  tau <- .ComputeRelativeEffect(
+    p1 = obs_probs,
+    p0 = cf_avg,
+    tau_assumption = tau_assumption
+  )
 
   list(
     zeta          = zeta,

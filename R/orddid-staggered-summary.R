@@ -30,10 +30,12 @@ summary.orddid_staggered <- function(object, ...) {
   tau <- object$group_time_tau
   cat("\nGroup-Time Relative Effects (tau bounds):\n\n")
   for (r in seq_len(nrow(tau))) {
-    cat(sprintf("  (G=%s, T=%s): [%7.4f, %7.4f]  CI: [%7.4f, %7.4f]\n",
+    cat(sprintf("  (G=%s, T=%s, assumption=%s): [%7.4f, %7.4f]  CI: [%7.4f, %7.4f]  status=%s\n",
                 tau$group[r], tau$time[r],
+                tau$tau_assumption[r],
                 tau$tau_lb[r], tau$tau_ub[r],
-                tau$ci_lower[r], tau$ci_upper[r]))
+                tau$ci_lower[r], tau$ci_upper[r],
+                tau$status[r]))
   }
 
   ## Aggregate
@@ -46,9 +48,13 @@ summary.orddid_staggered <- function(object, ...) {
                   j, agg$agg_zeta[j],
                   agg$agg_zeta_ci[j, 1], agg$agg_zeta_ci[j, 2]))
     }
-    cat(sprintf("  tau:    [%7.4f, %7.4f]  CI: [%7.4f, %7.4f]\n",
-                agg$agg_tau[1], agg$agg_tau[2],
-                agg$agg_tau_ci[1], agg$agg_tau_ci[2]))
+    for (r in seq_len(nrow(agg$agg_tau))) {
+      cat(sprintf("  tau (%s): [%7.4f, %7.4f]  CI: [%7.4f, %7.4f]  status=%s\n",
+                  agg$agg_tau$tau_assumption[r],
+                  agg$agg_tau$tau_lb[r], agg$agg_tau$tau_ub[r],
+                  agg$agg_tau$lower_ci[r], agg$agg_tau$upper_ci[r],
+                  agg$agg_tau$status[r]))
+    }
   }
 
   invisible(object)
@@ -56,7 +62,7 @@ summary.orddid_staggered <- function(object, ...) {
 
 #' @export
 print.orddid_staggered <- function(x, ...) {
-  n_gt <- nrow(x$group_time_tau)
+  n_gt <- nrow(unique(x$group_time_tau[c("group", "time")]))
   cat(sprintf("Ordinal DID (Staggered): %d group-time pairs, %d bootstrap iterations\n",
               n_gt, x$inputs$n_boot))
   invisible(x)

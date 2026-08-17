@@ -21,6 +21,12 @@
 #'   in the semiparametric Step 1 (default 1, i.e., the first covariate).
 #' @param n_cores Integer; number of cores for parallel computing. Default
 #'   \code{NULL} uses all available cores minus one.
+#' @param tau_assumption Character vector controlling how the relative-effect
+#'   bounds are computed. \code{"none"} uses the unconstrained sharp bounds of
+#'   Lu, Zhang, and Ding (2020). \code{"stochastic_dominance"} imposes positive
+#'   regression dependence on the joint distribution of the post-treatment
+#'   potential outcomes and computes the tighter feasible bounds by linear
+#'   programming. By default, both are returned.
 #' @return A list with components:
 #' \item{inputs}{Function arguments for reproducibility.}
 #' \item{estimate_effects}{Data frame of category-specific effects with CIs.}
@@ -79,9 +85,11 @@ ord_did <- function(
   method = c("parametric", "semiparametric", "parametric_covariates"),
   covariates = NULL,
   fixed_index = 1,
-  n_cores = NULL
+  n_cores = NULL,
+  tau_assumption = c("none", "stochastic_dominance")
 ) {
   method <- match.arg(method)
+  tau_assumption <- .orddid_match_tau_assumptions(tau_assumption)
 
   if (method == "semiparametric" || method == "parametric_covariates") {
     return(.ord_did_with_covariates(
@@ -95,7 +103,8 @@ ord_did <- function(
       use_parallel = use_parallel,
       fixed_index = fixed_index,
       n_cores = n_cores,
-      method = method
+      method = method,
+      tau_assumption = tau_assumption
     ))
   }
 
@@ -108,7 +117,10 @@ ord_did <- function(
   )
 
   # Compute point estimate
-  point_estimate <- .GetPointEstimate(df = df_format)
+  point_estimate <- .GetPointEstimate(
+    df = df_format,
+    tau_assumption = tau_assumption
+  )
 
   if (use_parallel) {
     if (is.null(n_cores)) n_cores <- max(1, parallel::detectCores() - 1)
@@ -133,13 +145,24 @@ ord_did <- function(
     .packages = c("dplyr", "rlang", "orddid")
   ) %dopar%
     {
-      est <- .RunBootstrap(
-        df = data,
-        cluster = cluster,
-        outcome = outcome,
-        post = post,
-        treat = treat
+      est <- tryCatch(
+        .RunBootstrap(
+          df = data,
+          cluster = cluster,
+          outcome = outcome,
+          post = post,
+          treat = treat,
+          tau_assumption = tau_assumption
+        ),
+        error = function(e) NULL
       )
+      if (is.null(est)) {
+        return(tibble::tibble(
+          iteration = i,
+          diff_effects = list(NULL),
+          relative_effect = list(NULL)
+        ))
+      }
       tibble::tibble(
         iteration = i,
         diff_effects = list(est$diff_effects),
@@ -157,22 +180,10 @@ ord_did <- function(
     upper_ci = ci_diff$upper
   )
 
-  # Relative effect results
-  relative_ci <- imbens_manski_ci(
-    lb_hat = point_estimate$estimated_effects$relative_effect[1],
-    ub_hat = point_estimate$estimated_effects$relative_effect[2],
-    se_lb = ci_diff$re_se[1],
-    se_ub = ci_diff$re_se[2],
-    alpha = 0.05,
-    truncate_diff = TRUE
-  )
-
-  relative_res <- tibble(
-    effect_lb = point_estimate$estimated_effects$relative_effect[1],
-    effect_ub = point_estimate$estimated_effects$relative_effect[2],
-    lower_ci = relative_ci$ci[1],
-    upper_ci = relative_ci$ci[2],
-    c_crit = relative_ci$c_crit
+  relative_res <- .FinalizeRelativeEffects(
+    relative_effects = point_estimate$estimated_effects$relative_effect,
+    re_summary = ci_diff$re_summary,
+    alpha = 0.05
   )
   return(list(
     inputs = list(
@@ -181,10 +192,12 @@ ord_did <- function(
       treat = treat,
       cluster = cluster,
       n_boot = n_boot,
-      method = "parametric"
+      method = "parametric",
+      tau_assumption = tau_assumption
     ),
     estimate_effects = diff_res,
-    relative_effects = relative_res
+    relative_effects = relative_res,
+    n_boot_fail = ci_diff$n_fail
   ))
 }
 
@@ -193,7 +206,9 @@ ord_did <- function(
 .ord_did_with_covariates <- function(data, outcome, post, treat, cluster,
                                      covariates, n_boot, use_parallel,
                                      fixed_index, n_cores = NULL,
-                                     method = "semiparametric") {
+                                     method = "semiparametric",
+                                     tau_assumption = "none") {
+  tau_assumption <- .orddid_match_tau_assumptions(tau_assumption)
 
   if (is.null(covariates)) {
     stop("covariates must be specified for method = '", method, "'.")
@@ -218,7 +233,8 @@ ord_did <- function(
     Y10 = cells$Y10, X10 = cells$X10,
     Y11 = cells$Y11, X11 = cells$X11,
     fixed_index = fixed_index,
-    verbose = FALSE
+    verbose = FALSE,
+    tau_assumption = tau_assumption
   )
 
   J <- length(point$zeta)
@@ -289,7 +305,8 @@ ord_did <- function(
         Y10 = y_b[i10], X10 = X_b[i10, , drop = FALSE],
         Y11 = y_b[i11], X11 = X_b[i11, , drop = FALSE],
         fixed_index = fixed_index,
-        verbose = FALSE
+        verbose = FALSE,
+        tau_assumption = tau_assumption
       ),
       error = function(e) NULL
     )
@@ -297,14 +314,13 @@ ord_did <- function(
 
   ## Collect results
   boot_zeta <- matrix(NA, n_boot, J)
-  boot_tau  <- matrix(NA, n_boot, 2)
-  colnames(boot_tau) <- c("lower", "upper")
+  boot_tau <- vector("list", n_boot)
   n_fail <- 0
 
   for (b in seq_len(n_boot)) {
     if (!is.null(boot_results[[b]])) {
       boot_zeta[b, ] <- boot_results[[b]]$zeta
-      boot_tau[b, ]  <- boot_results[[b]]$tau
+      boot_tau[[b]] <- boot_results[[b]]$tau
     } else {
       n_fail <- n_fail + 1
     }
@@ -329,31 +345,13 @@ ord_did <- function(
     upper_ci = zeta_upper
   )
 
-  ## Relative effect
-  re_se <- if (sum(valid) > 10) {
-    apply(boot_tau[valid, , drop = FALSE], 2, stats::sd)
-  } else {
-    c(NA, NA)
-  }
-
-  relative_ci <- tryCatch(
-    imbens_manski_ci(
-      lb_hat = point$tau[1],
-      ub_hat = point$tau[2],
-      se_lb = re_se[1],
-      se_ub = re_se[2],
-      alpha = 0.05,
-      truncate_diff = TRUE
+  relative_res <- .FinalizeRelativeEffects(
+    relative_effects = point$tau,
+    re_summary = .SummariseRelativeBootstrap(
+      boot_tau[!vapply(boot_tau, is.null, logical(1))],
+      tau_assumptions = point$tau$tau_assumption
     ),
-    error = function(e) list(ci = c(NA, NA), c_crit = NA)
-  )
-
-  relative_res <- tibble::tibble(
-    effect_lb = point$tau[1],
-    effect_ub = point$tau[2],
-    lower_ci  = relative_ci$ci[1],
-    upper_ci  = relative_ci$ci[2],
-    c_crit    = relative_ci$c_crit
+    alpha = 0.05
   )
 
   list(
@@ -364,7 +362,8 @@ ord_did <- function(
       cluster = cluster,
       covariates = covariates,
       n_boot = n_boot,
-      method = method
+      method = method,
+      tau_assumption = tau_assumption
     ),
     estimate_effects = diff_res,
     relative_effects = relative_res,
@@ -403,7 +402,9 @@ ord_did <- function(
   )
 }
 
-.GetPointEstimate <- function(df) {
+.GetPointEstimate <- function(df,
+                              tau_assumption = "none") {
+  tau_assumption <- .orddid_match_tau_assumptions(tau_assumption)
   y1_obs <- .EstimateObservedDist(Y11 = df$Y11)
   y1_cf <- .EstimateCounterfactualDist(
     Y10 = df$Y10,
@@ -418,7 +419,8 @@ ord_did <- function(
   )
   relative <- .ComputeRelativeEffect(
     p1 = y1_obs$prob,
-    p0 = y1_cf$prob
+    p0 = y1_cf$prob,
+    tau_assumption = tau_assumption
   )
   return(
     list(

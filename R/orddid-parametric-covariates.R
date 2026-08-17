@@ -154,12 +154,15 @@
 #' @param Y11,X11 outcome and covariates for treated post
 #' @param fixed_index ignored (included for interface compatibility)
 #' @param verbose print progress
+#' @param tau_assumption relative-effect bound assumptions passed to
+#'   \code{.compute_semiparametric_effects()}
 #' @return list with all estimates and treatment effects
 #' @keywords internal
 .parametric_covariates_did_once <- function(Y00, X00, Y01, X01,
                                             Y10, X10, Y11, X11,
                                             fixed_index = 2,
-                                            verbose = FALSE) {
+                                            verbose = FALSE,
+                                            tau_assumption = "none") {
 
   ## Step 1: ordered probit MLE on (D=0,t=0) cell
   fit00 <- .ordered_probit_mle(Y00, X00)
@@ -196,7 +199,8 @@
     kappa    = kappa,
     Ftilde   = stats::pnorm,
     X11      = X11,
-    Y11      = Y11
+    Y11      = Y11,
+    tau_assumption = tau_assumption
   )
 
   list(

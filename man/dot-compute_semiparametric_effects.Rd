@@ -13,7 +13,8 @@
   kappa,
   Ftilde,
   X11,
-  Y11
+  Y11,
+  tau_assumption = "none"
 )
 }
 \arguments{
@@ -34,6 +35,9 @@
 \item{X11}{design matrix for treated post-treatment units}
 
 \item{Y11}{observed outcomes for treated post-treatment units}
+
+\item{tau_assumption}{relative-effect bound assumptions passed to
+\code{.ComputeRelativeEffect()}}
 }
 \value{
 list with zeta, tau, obs_probs, cf_probs_avg

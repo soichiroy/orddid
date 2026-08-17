@@ -52,13 +52,15 @@ test_that("ord_did_staggered runs on simulated staggered data", {
     cluster = "unit",
     n_boot = 30,
     base_period = "previous",
-    weights = "uniform"
+    weights = "uniform",
+    tau_assumption = "stochastic_dominance"
   )
 
   expect_s3_class(result, "orddid_staggered")
   expect_true(nrow(result$group_time_effects) > 0)
   expect_true(nrow(result$group_time_tau) > 0)
   expect_true(!is.null(result$aggregate_effects$agg_zeta))
+  expect_equal(result$inputs$tau_assumption, "stochastic_dominance")
 })
 
 test_that("staggered with no treatment effect gives near-zero zeta", {

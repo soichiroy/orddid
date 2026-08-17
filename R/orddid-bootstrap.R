@@ -1,5 +1,6 @@
 
-.RunBootstrap <- function(df, cluster, outcome, post, treat) {
+.RunBootstrap <- function(df, cluster, outcome, post, treat,
+                          tau_assumption = "none") {
   # Bootstrap
   df_boot <- .SampleDf(df = df, cluster = cluster)
 
@@ -12,7 +13,10 @@
   )
 
   # Estimation
-  estimate <- .GetPointEstimate(df = df_format)$estimated_effects
+  estimate <- .GetPointEstimate(
+    df = df_format,
+    tau_assumption = tau_assumption
+  )$estimated_effects
 
   return(estimate)
 }
@@ -39,17 +43,109 @@
 #' @importFrom stats quantile sd
 #' @noRd
 .ComputeCI <- function(boot_estimates, alpha = 0.05) {
+  valid <- !vapply(boot_estimates$diff_effects, is.null, logical(1)) &
+           !vapply(boot_estimates$relative_effect, is.null, logical(1))
+  n_fail <- sum(!valid)
+
+  if (!any(valid)) {
+    stop("All bootstrap iterations failed.", call. = FALSE)
+  }
+
   # Collect bootstrap estimates for diff effects
-  diff_effects <- do.call(rbind, boot_estimates$diff_effects)
+  diff_effects <- do.call(rbind, boot_estimates$diff_effects[valid])
   # Compute percentile CI
   lower_bound <- apply(diff_effects, 2, quantile, probs = alpha / 2)
   upper_bound <- apply(diff_effects, 2, quantile, probs = 1 - alpha / 2)
 
-  # Collect estimates for relative effect
-  relative_effects <- do.call(rbind, boot_estimates$relative_effect)
-  # Compute percentile CI
-  re_se <- apply(relative_effects, 2, sd)
-  return(list(lower = lower_bound, upper = upper_bound, re_se = re_se))
+  return(list(
+    lower = lower_bound,
+    upper = upper_bound,
+    re_summary = .SummariseRelativeBootstrap(
+      boot_estimates$relative_effect[valid]
+    ),
+    n_fail = n_fail,
+    n_valid = sum(valid)
+  ))
+}
+
+
+.SummariseRelativeBootstrap <- function(relative_effect_list,
+                                        tau_assumptions = NULL) {
+  if (length(relative_effect_list) == 0) {
+    return(tibble::tibble(
+      tau_assumption = character(),
+      se_lb = numeric(),
+      se_ub = numeric(),
+      n_valid = integer()
+    ))
+  }
+
+  if (is.null(tau_assumptions)) {
+    tau_assumptions <- unique(unlist(lapply(
+      relative_effect_list,
+      function(x) x$tau_assumption
+    )))
+  }
+
+  out <- lapply(tau_assumptions, function(assump) {
+    lb_vals <- ub_vals <- numeric()
+
+    for (tab in relative_effect_list) {
+      row <- tab[tab$tau_assumption == assump, , drop = FALSE]
+      if (nrow(row) == 0L) next
+      if (!is.finite(row$effect_lb[1]) || !is.finite(row$effect_ub[1])) next
+      lb_vals <- c(lb_vals, row$effect_lb[1])
+      ub_vals <- c(ub_vals, row$effect_ub[1])
+    }
+
+    tibble::tibble(
+      tau_assumption = assump,
+      se_lb = if (length(lb_vals) > 1L) stats::sd(lb_vals) else NA_real_,
+      se_ub = if (length(ub_vals) > 1L) stats::sd(ub_vals) else NA_real_,
+      n_valid = length(lb_vals)
+    )
+  })
+
+  dplyr::bind_rows(out)
+}
+
+
+.FinalizeRelativeEffects <- function(relative_effects, re_summary, alpha = 0.05) {
+  out <- relative_effects
+  out$lower_ci <- NA_real_
+  out$upper_ci <- NA_real_
+  out$c_crit <- NA_real_
+  out$n_boot_valid <- 0L
+
+  for (i in seq_len(nrow(out))) {
+    row_summary <- re_summary[
+      re_summary$tau_assumption == out$tau_assumption[i],
+      ,
+      drop = FALSE
+    ]
+    if (nrow(row_summary) == 0L) next
+
+    out$n_boot_valid[i] <- row_summary$n_valid[1]
+    if (out$status[i] != "ok") next
+
+    rel_ci <- tryCatch(
+      imbens_manski_ci(
+        lb_hat = out$effect_lb[i],
+        ub_hat = out$effect_ub[i],
+        se_lb = row_summary$se_lb[1],
+        se_ub = row_summary$se_ub[1],
+        alpha = alpha,
+        truncate_diff = TRUE
+      ),
+      error = function(e) list(ci = c(NA_real_, NA_real_), c_crit = NA_real_)
+    )
+
+    out$lower_ci[i] <- rel_ci$ci[1]
+    out$upper_ci[i] <- rel_ci$ci[2]
+    out$c_crit[i] <- rel_ci$c_crit
+  }
+
+  out
 }
 
 

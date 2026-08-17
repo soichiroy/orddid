@@ -10,7 +10,8 @@
   unit,
   time,
   group,
-  base_period = "previous"
+  base_period = "previous",
+  tau_assumption = "none"
 )
 }
 \arguments{
@@ -25,6 +26,9 @@
 \item{group}{column name for adoption group (Inf or NA = never-treated)}
 
 \item{base_period}{"previous" or an integer}
+
+\item{tau_assumption}{relative-effect bound assumption passed to
+\code{.ComputeRelativeEffect()}}
 }
 \value{
 list with group_time results and fitted parameters

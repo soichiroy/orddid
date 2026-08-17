@@ -52,8 +52,9 @@ test_that(".semiparametric_did_once runs without error on simulated data", {
 
   expect_true(is.list(res))
   expect_length(res$zeta, 3)
-  expect_length(res$tau, 2)
-  expect_true(res$tau[1] <= res$tau[2])
+  expect_equal(nrow(res$tau), 1)
+  expect_equal(res$tau$tau_assumption[1], "none")
+  expect_true(res$tau$effect_lb[1] <= res$tau$effect_ub[1])
   expect_true(all(abs(res$zeta) < 1))
 })
 

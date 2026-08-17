@@ -1,6 +1,6 @@
 Package: orddid
 Title: Difference-in-Differences Design for Ordinal Outcome
-Version: 1.1.0
+Version: 1.2.0
 Authors@R:
     person(given = "Soichiro",
            family = "Yamauchi",
@@ -14,6 +14,7 @@ Imports:
     dplyr,
     foreach,
     ggplot2,
+    lpSolve,
     Matrix,
     purrr,
     rlang,

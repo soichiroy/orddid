@@ -14,7 +14,8 @@
   Y11,
   X11,
   fixed_index = 2,
-  verbose = FALSE
+  verbose = FALSE,
+  tau_assumption = "none"
 )
 }
 \arguments{
@@ -29,6 +30,9 @@
 \item{fixed_index}{which coefficient to normalize in Step 1}
 
 \item{verbose}{print progress}
+
+\item{tau_assumption}{relative-effect bound assumptions passed to
+\code{.compute_semiparametric_effects()}}
 }
 \value{
 list with all estimates and treatment effects

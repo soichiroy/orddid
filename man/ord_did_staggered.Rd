@@ -14,7 +14,8 @@ ord_did_staggered(
   n_boot = 500,
   base_period = "previous",
   weights = "uniform",
-  use_parallel = FALSE
+  use_parallel = FALSE,
+  tau_assumption = c("none", "stochastic_dominance")
 )
 }
 \arguments{
@@ -40,6 +41,12 @@ an integer uses that fixed period for all groups.}
 \item{weights}{\code{"uniform"} (default) for equal weights on all (g,t) pairs.}
 
 \item{use_parallel}{If \code{TRUE}, use parallel computing.}
+
+\item{tau_assumption}{Character vector controlling how the relative-effect
+bounds are computed. \code{"none"} uses the unconstrained sharp bounds,
+while \code{"stochastic_dominance"} imposes positive regression dependence
+and computes the resulting bounds by linear programming. By default, both
+are returned.}
 }
 \value{
 An S3 object of class \code{"orddid_staggered"} with:

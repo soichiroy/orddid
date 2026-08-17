@@ -11,10 +11,14 @@
 #' @param time column name for time period
 #' @param group column name for adoption group (Inf or NA = never-treated)
 #' @param base_period "previous" or an integer
+#' @param tau_assumption relative-effect bound assumption passed to
+#'   \code{.ComputeRelativeEffect()}
 #' @return list with group_time results and fitted parameters
 #' @keywords internal
 .staggered_estimate_all <- function(data, outcome, unit, time, group,
-                                    base_period = "previous") {
+                                    base_period = "previous",
+                                    tau_assumption = "none") {
+  tau_assumption <- .orddid_match_tau_assumptions(tau_assumption)
 
   Y     <- data[[outcome]]
   t_col <- data[[time]]
@@ -115,7 +119,11 @@
 
       ## Treatment effects
       zeta <- .ComputeTreatmentEffects(y1_prop = prob_obs, y0_prop = prob_cf)
-      tau  <- .ComputeRelativeEffect(p1 = prob_obs, p0 = prob_cf)
+      tau  <- .ComputeRelativeEffect(
+        p1 = prob_obs,
+        p0 = prob_cf,
+        tau_assumption = tau_assumption
+      )
 
       gt_results[[length(gt_results) + 1]] <- list(
         group     = gg,
@@ -151,6 +159,7 @@
   if (n_gt == 0) return(list(agg_zeta = NULL, agg_tau = NULL))
 
   J <- length(gt_results[[1]]$zeta)
+  tau_assumptions <- gt_results[[1]]$tau$tau_assumption
 
   if (is.character(weights) && weights == "uniform") {
     w <- rep(1 / n_gt, n_gt)
@@ -160,12 +169,36 @@
   }
 
   agg_zeta <- numeric(J)
-  agg_tau  <- c(lower = 0, upper = 0)
-
   for (i in seq_len(n_gt)) {
     agg_zeta <- agg_zeta + w[i] * gt_results[[i]]$zeta
-    agg_tau  <- agg_tau  + w[i] * gt_results[[i]]$tau
   }
+
+  agg_tau <- lapply(tau_assumptions, function(assump) {
+    tau_rows <- lapply(gt_results, function(res) {
+      res$tau[res$tau$tau_assumption == assump, , drop = FALSE]
+    })
+
+    tau_ok <- vapply(tau_rows, function(x) {
+      nrow(x) == 1L && identical(x$status[1], "ok")
+    }, logical(1))
+
+    tibble::tibble(
+      tau_assumption = assump,
+      tau_lb = if (all(tau_ok)) {
+        sum(w * vapply(tau_rows, function(x) x$effect_lb[1], numeric(1)))
+      } else {
+        NA_real_
+      },
+      tau_ub = if (all(tau_ok)) {
+        sum(w * vapply(tau_rows, function(x) x$effect_ub[1], numeric(1)))
+      } else {
+        NA_real_
+      },
+      status = if (all(tau_ok)) "ok" else "infeasible"
+    )
+  })
+
+  agg_tau <- dplyr::bind_rows(agg_tau)
 
   list(agg_zeta = agg_zeta, agg_tau = agg_tau)
 }

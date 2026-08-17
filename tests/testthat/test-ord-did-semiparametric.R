@@ -44,7 +44,8 @@ test_that("ord_did with method='semiparametric' runs and returns correct structu
     n_boot = 20,
     method = "semiparametric",
     covariates = c("X1", "X2"),
-    fixed_index = 2
+    fixed_index = 2,
+    tau_assumption = "stochastic_dominance"
   )
 
   expect_true(is.list(result))
@@ -52,6 +53,7 @@ test_that("ord_did with method='semiparametric' runs and returns correct structu
   expect_true("relative_effects" %in% names(result))
   expect_equal(nrow(result$estimate_effects), 3)
   expect_equal(result$inputs$method, "semiparametric")
+  expect_equal(result$inputs$tau_assumption, "stochastic_dominance")
 })
 
 test_that("ord_did semiparametric errors without covariates", {

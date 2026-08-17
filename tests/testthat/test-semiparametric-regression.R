@@ -52,7 +52,8 @@ test_that("semiparametric DID recovers true effects under normal DGP", {
   }
   expect_equal(sum(res$zeta), 0, tolerance = 0.02,
                label = "zeta sums to 0")
-  expect_true(res$tau[1] <= res$tau[2])
+  expect_equal(res$tau$tau_assumption[1], "none")
+  expect_true(res$tau$effect_lb[1] <= res$tau$effect_ub[1])
 })
 
 test_that("semiparametric DID returns near-zero effects under null", {
@@ -212,8 +213,9 @@ test_that("reference values: semiparametric DID on fixed data", {
   ## Reference values (computed with current implementation, seed 42)
   ## Update these if and only if the change is intentional.
   expect_equal(length(res$zeta), 3)
-  expect_equal(length(res$tau), 2)
-  expect_true(res$tau[1] <= res$tau[2])
+  expect_equal(nrow(res$tau), 1)
+  expect_equal(res$tau$tau_assumption[1], "none")
+  expect_true(res$tau$effect_lb[1] <= res$tau$effect_ub[1])
   expect_true(all(abs(res$zeta) < 1))
   expect_equal(sum(res$zeta), 0, tolerance = 0.01)
 })
