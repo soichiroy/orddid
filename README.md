@@ -5,7 +5,7 @@
 
 <!-- badges: start -->
 
-[![](https://img.shields.io/badge/devel%20version-1.1.0-blue.svg)](https://github.com/soichiroy/orddid)
+[![](https://img.shields.io/badge/devel%20version-1.2.0-blue.svg)](https://github.com/soichiroy/orddid)
 [![Codecov test
 coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)](https://codecov.io/gh/soichiroy/orddid?branch=master)
 [![R build
@@ -82,10 +82,12 @@ fit$estimate_effects
 
 ## bounds on the relative treatment effect
 fit$relative_effects
-#> # A tibble: 1 × 5
-#>   effect_lb effect_ub lower_ci upper_ci c_crit
-#>       <dbl>     <dbl>    <dbl>    <dbl>  <dbl>
-#> 1    -0.155     0.158   -0.168    0.173   1.64
+#> # A tibble: 2 × 8
+#>   tau_assumption       effect_lb effect_ub status lower_ci upper_ci c_crit
+#>   <chr>                    <dbl>     <dbl> <chr>     <dbl>    <dbl>  <dbl>
+#> 1 none                   -0.155     0.158  ok      -0.168    0.173    1.64
+#> 2 stochastic_dominance   -0.0608    0.0601 ok      -0.0714   0.0708   1.64
+#> # ℹ 1 more variable: n_boot_valid <int>
 ```
 
 ## Example: Semiparametric Estimation with Covariates
@@ -133,10 +135,12 @@ fit_semi$estimate_effects
 
 ## bounds on the relative treatment effect
 fit_semi$relative_effects
-#> # A tibble: 1 × 5
-#>   effect_lb effect_ub lower_ci upper_ci c_crit
-#>       <dbl>     <dbl>    <dbl>    <dbl>  <dbl>
-#> 1    -0.105     0.281   -0.154    0.332   1.64
+#> # A tibble: 2 × 8
+#>   tau_assumption       effect_lb effect_ub status lower_ci upper_ci c_crit
+#>   <chr>                    <dbl>     <dbl> <chr>     <dbl>    <dbl>  <dbl>
+#> 1 none                   -0.105      0.281 ok      -0.154     0.332   1.64
+#> 2 stochastic_dominance    0.0324     0.171 ok      -0.0149    0.220   1.64
+#> # ℹ 1 more variable: n_boot_valid <int>
 ```
 
 ## Example: Equivalence Test
