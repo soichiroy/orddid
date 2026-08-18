@@ -27,6 +27,10 @@
 #'   regression dependence on the joint distribution of the post-treatment
 #'   potential outcomes and computes the tighter feasible bounds by linear
 #'   programming. By default, both are returned.
+#' @param semiparametric_regularization Character; regularization used for the
+#'   first-stage error CDF when \code{method = "semiparametric"}. The default
+#'   \code{"ispline"} uses monotone I-spline smoothing; \code{"ridge"} uses the
+#'   vanishing-ridge regularization. Ignored for other methods.
 #' @return A list with components:
 #' \item{inputs}{Function arguments for reproducibility.}
 #' \item{estimate_effects}{Data frame of category-specific effects with CIs.}
@@ -86,9 +90,13 @@ ord_did <- function(
   covariates = NULL,
   fixed_index = 1,
   n_cores = NULL,
-  tau_assumption = c("none", "stochastic_dominance")
+  tau_assumption = c("none", "stochastic_dominance"),
+  semiparametric_regularization = c("ispline", "ridge")
 ) {
   method <- match.arg(method)
+  semiparametric_regularization <- match.arg(
+    semiparametric_regularization
+  )
   tau_assumption <- .orddid_match_tau_assumptions(tau_assumption)
 
   if (method == "semiparametric" || method == "parametric_covariates") {
@@ -104,7 +112,8 @@ ord_did <- function(
       fixed_index = fixed_index,
       n_cores = n_cores,
       method = method,
-      tau_assumption = tau_assumption
+      tau_assumption = tau_assumption,
+      semiparametric_regularization = semiparametric_regularization
     ))
   }
 
@@ -207,12 +216,106 @@ ord_did <- function(
                                      covariates, n_boot, use_parallel,
                                      fixed_index, n_cores = NULL,
                                      method = "semiparametric",
-                                     tau_assumption = "none") {
+                                     tau_assumption = "none",
+                                     semiparametric_regularization = c(
+                                       "ispline", "ridge"
+                                     )) {
   tau_assumption <- .orddid_match_tau_assumptions(tau_assumption)
+  semiparametric_regularization <- match.arg(
+    semiparametric_regularization
+  )
 
   if (is.null(covariates)) {
     stop("covariates must be specified for method = '", method, "'.")
   }
+  if (!is.character(covariates) || length(covariates) < 1L ||
+      anyNA(covariates) || any(!nzchar(covariates)) ||
+      anyDuplicated(covariates)) {
+    stop("covariates must be a non-empty character vector of unique column names.")
+  }
+
+  required_columns <- unique(c(outcome, post, treat, cluster, covariates))
+  missing_columns <- setdiff(required_columns, names(data))
+  if (length(missing_columns) > 0L) {
+    stop(
+      "Missing required columns: ",
+      paste(missing_columns, collapse = ", "),
+      "."
+    )
+  }
+
+  if (length(n_boot) != 1L || !is.numeric(n_boot) || is.na(n_boot) ||
+      !is.finite(n_boot) || n_boot < 0 || n_boot != floor(n_boot)) {
+    stop("n_boot must be one non-negative integer.")
+  }
+  n_boot <- as.integer(n_boot)
+
+  if (length(fixed_index) != 1L || !is.numeric(fixed_index) ||
+      is.na(fixed_index) || !is.finite(fixed_index) ||
+      fixed_index != floor(fixed_index) || fixed_index < 1L ||
+      fixed_index > length(covariates)) {
+    stop("fixed_index must identify one of the supplied covariates.")
+  }
+  fixed_index <- as.integer(fixed_index)
+
+  ## Use one complete-case sample for both the point estimate and bootstrap.
+  ## In particular, do not let split() silently discard missing cluster IDs.
+  keep <- stats::complete.cases(data[, required_columns, drop = FALSE])
+  data_use <- data[keep, , drop = FALSE]
+  if (nrow(data_use) == 0L) {
+    stop("No complete observations remain for covariate estimation.")
+  }
+
+  x_cols <- covariates
+  X_mat <- as.matrix(data_use[, x_cols, drop = FALSE])
+  if (!is.numeric(X_mat) || any(!is.finite(X_mat))) {
+    stop("All covariates must be numeric and finite on the estimation sample.")
+  }
+
+  y_vec <- suppressWarnings(as.integer(data_use[[outcome]]))
+  if (anyNA(y_vec)) {
+    stop("outcome must be coercible to ordered integer categories.")
+  }
+  y_vec <- y_vec - min(y_vec)
+  if (!identical(sort(unique(y_vec)), 0:2)) {
+    stop(
+      "Covariate estimators currently require exactly three pooled outcome ",
+      "categories, coded consecutively."
+    )
+  }
+
+  p_vec <- as.logical(data_use[[post]])
+  t_vec <- as.logical(data_use[[treat]])
+  if (anyNA(p_vec) || anyNA(t_vec)) {
+    stop("post and treat must be coercible to non-missing logical indicators.")
+  }
+
+  ## Cell membership: 1=Y00, 2=Y01, 3=Y10, 4=Y11.
+  cell_id <- 1L + as.integer(p_vec) + 2L * as.integer(t_vec)
+  cell_sizes <- tabulate(cell_id, nbins = 4L)
+  if (any(cell_sizes == 0L)) {
+    stop("All four treatment-by-period cells must contain observations.")
+  }
+
+  i00 <- cell_id == 1L
+  i01 <- cell_id == 2L
+  i10 <- cell_id == 3L
+  i11 <- cell_id == 4L
+
+  if (!identical(sort(unique(y_vec[i00])), 0:2)) {
+    stop("The control-pre cell (Y00) must contain all three outcome categories 0:2.")
+  }
+  if (method == "semiparametric" &&
+      length(unique(X_mat[i00, fixed_index])) < 2L) {
+    stop("The covariate selected by fixed_index must vary in the control-pre cell.")
+  }
+
+  cells <- list(
+    Y00 = y_vec[i00], X00 = X_mat[i00, , drop = FALSE],
+    Y01 = y_vec[i01], X01 = X_mat[i01, , drop = FALSE],
+    Y10 = y_vec[i10], X10 = X_mat[i10, , drop = FALSE],
+    Y11 = y_vec[i11], X11 = X_mat[i11, , drop = FALSE]
+  )
 
   ## Select estimation function based on method
   est_fn <- if (method == "semiparametric") {
@@ -221,47 +324,63 @@ ord_did <- function(
     .parametric_covariates_did_once
   }
 
-  x_cols <- covariates
-
-  ## Build cell data
-  cells <- .extract_semiparametric_cells(data, outcome, post, treat, x_cols)
+  ## Pass the CDF regularization only to the semiparametric workhorse so the
+  ## ordered-probit-with-covariates interface remains unchanged.
+  fit_once <- function(Y00, X00, Y01, X01, Y10, X10, Y11, X11) {
+    fit_args <- list(
+      Y00 = Y00, X00 = X00,
+      Y01 = Y01, X01 = X01,
+      Y10 = Y10, X10 = X10,
+      Y11 = Y11, X11 = X11,
+      fixed_index = fixed_index,
+      verbose = FALSE,
+      tau_assumption = tau_assumption
+    )
+    if (method == "semiparametric") {
+      fit_args$semiparametric_regularization <-
+        semiparametric_regularization
+    }
+    do.call(est_fn, fit_args)
+  }
 
   ## Point estimate
-  point <- est_fn(
+  point <- fit_once(
     Y00 = cells$Y00, X00 = cells$X00,
     Y01 = cells$Y01, X01 = cells$X01,
     Y10 = cells$Y10, X10 = cells$X10,
-    Y11 = cells$Y11, X11 = cells$X11,
-    fixed_index = fixed_index,
-    verbose = FALSE,
-    tau_assumption = tau_assumption
+    Y11 = cells$Y11, X11 = cells$X11
   )
 
   J <- length(point$zeta)
+  if (J != 3L || any(!is.finite(point$zeta))) {
+    stop("The point estimate did not return three finite category effects.")
+  }
 
   ## Bootstrap — precompute vectors and indices for fast resampling
-
-  ## Precompute: extract outcome, post, treat, and design matrix as raw vectors/matrices
-  y_all <- data[[outcome]]
-  p_all <- as.logical(data[[post]])
-  t_all <- as.logical(data[[treat]])
-  keep  <- !(is.na(y_all) | is.na(p_all) | is.na(t_all))
-
-  y_vec       <- as.integer(y_all[keep]) - min(as.integer(y_all[keep]))
-  X_mat       <- as.matrix(data[keep, x_cols, drop = FALSE])
-  cluster_vec <- data[[cluster]][keep]
-
-  ## Cell membership: 1=Y00, 2=Y01, 3=Y10, 4=Y11
-  cell_id <- 1L + as.integer(as.logical(data[[post]][keep])) +
-             2L * as.integer(as.logical(data[[treat]][keep]))
+  cluster_vec <- data_use[[cluster]]
 
   ## Cluster index: map each cluster to its row positions (integer vectors)
   cluster_idx <- split(seq_along(y_vec), cluster_vec)
   n_clusters  <- length(cluster_idx)
 
+  ## Draw the complete bootstrap plan in the calling R process. Workers only
+  ## consume these indices, so results do not depend on scheduling or n_cores.
+  bootstrap_cluster_samples <- lapply(seq_len(n_boot), function(b) {
+    sample.int(n_clusters, n_clusters, replace = TRUE)
+  })
+
   ## Set up parallel backend
-  if (use_parallel) {
-    if (is.null(n_cores)) n_cores <- max(1, parallel::detectCores() - 1)
+  if (use_parallel && is.null(n_cores)) {
+    detected_cores <- parallel::detectCores()
+    n_cores <- if (is.na(detected_cores)) 1L else max(1L, detected_cores - 1L)
+  }
+  if (use_parallel &&
+      (length(n_cores) != 1L || !is.numeric(n_cores) || is.na(n_cores) ||
+       !is.finite(n_cores) || n_cores < 1L || n_cores != floor(n_cores))) {
+    stop("n_cores must be one positive integer when use_parallel = TRUE.")
+  }
+  if (use_parallel && n_boot > 0L) {
+    n_cores <- as.integer(n_cores)
     cl <- parallel::makeCluster(n_cores)
     doParallel::registerDoParallel(cl)
     on.exit({
@@ -274,42 +393,50 @@ ord_did <- function(
 
   ## Capture internal function for export to parallel workers
   ## (needed when using devtools::load_all instead of installed package)
-  .boot_semi_fn <- est_fn
+  .boot_covariate_fn <- fit_once
 
   ## Run cluster bootstrap in parallel
-  boot_results <- foreach::foreach(
-    b = seq_len(n_boot),
-    .inorder = FALSE,
-    .packages = c("orddid")
-  ) %dopar% {
-    ## Resample clusters with replacement, gather row indices
-    sampled <- sample.int(n_clusters, n_clusters, replace = TRUE)
-    row_idx <- unlist(cluster_idx[sampled], use.names = FALSE)
+  boot_results <- if (n_boot == 0L) {
+    list()
+  } else {
+    foreach::foreach(
+      b = seq_len(n_boot),
+      .inorder = TRUE,
+      .packages = c("orddid")
+    ) %dopar% {
+      sampled <- bootstrap_cluster_samples[[b]]
+      row_idx <- unlist(cluster_idx[sampled], use.names = FALSE)
 
-    ## Subset via integer indexing (fast for vectors and matrices)
-    y_b    <- y_vec[row_idx]
-    X_b    <- X_mat[row_idx, , drop = FALSE]
-    cell_b <- cell_id[row_idx]
+      y_b    <- y_vec[row_idx]
+      X_b    <- X_mat[row_idx, , drop = FALSE]
+      cell_b <- cell_id[row_idx]
 
-    i00 <- cell_b == 1L
-    i01 <- cell_b == 2L
-    i10 <- cell_b == 3L
-    i11 <- cell_b == 4L
+      b00 <- cell_b == 1L
+      b01 <- cell_b == 2L
+      b10 <- cell_b == 3L
+      b11 <- cell_b == 4L
 
-    if (min(sum(i00), sum(i01), sum(i10), sum(i11)) < 10) return(NULL)
+      if (min(sum(b00), sum(b01), sum(b10), sum(b11)) < 10L ||
+          !identical(sort(unique(y_b[b00])), 0:2)) {
+        return(NULL)
+      }
 
-    tryCatch(
-      .boot_semi_fn(
-        Y00 = y_b[i00], X00 = X_b[i00, , drop = FALSE],
-        Y01 = y_b[i01], X01 = X_b[i01, , drop = FALSE],
-        Y10 = y_b[i10], X10 = X_b[i10, , drop = FALSE],
-        Y11 = y_b[i11], X11 = X_b[i11, , drop = FALSE],
-        fixed_index = fixed_index,
-        verbose = FALSE,
-        tau_assumption = tau_assumption
-      ),
-      error = function(e) NULL
-    )
+      fit_b <- tryCatch(
+        .boot_covariate_fn(
+          Y00 = y_b[b00], X00 = X_b[b00, , drop = FALSE],
+          Y01 = y_b[b01], X01 = X_b[b01, , drop = FALSE],
+          Y10 = y_b[b10], X10 = X_b[b10, , drop = FALSE],
+          Y11 = y_b[b11], X11 = X_b[b11, , drop = FALSE]
+        ),
+        error = function(e) NULL
+      )
+
+      if (is.null(fit_b) || length(fit_b$zeta) != J ||
+          any(!is.finite(fit_b$zeta))) {
+        return(NULL)
+      }
+      fit_b
+    }
   }
 
   ## Collect results
@@ -327,7 +454,11 @@ ord_did <- function(
   }
 
   ## Compute CIs
-  valid <- !is.na(boot_zeta[, 1])
+  valid <- if (n_boot == 0L) {
+    logical(0)
+  } else {
+    apply(boot_zeta, 1L, function(z) all(is.finite(z)))
+  }
 
   zeta_lower <- zeta_upper <- rep(NA, J)
   if (sum(valid) > 10) {
@@ -363,11 +494,16 @@ ord_did <- function(
       covariates = covariates,
       n_boot = n_boot,
       method = method,
-      tau_assumption = tau_assumption
+      tau_assumption = tau_assumption,
+      fixed_index = fixed_index,
+      semiparametric_regularization = semiparametric_regularization,
+      use_parallel = use_parallel,
+      n_cores = n_cores
     ),
     estimate_effects = diff_res,
     relative_effects = relative_res,
-    n_boot_fail = n_fail
+    n_boot_fail = n_fail,
+    bootstrap_effects = boot_zeta
   )
 }
 
@@ -436,12 +572,17 @@ ord_did <- function(
   )
 }
 
-.EstimateCounterfactualDist <- function(Y10, Y01, Y00) {
+
+
+.EstimateCounterfactualDist <- function(Y10, Y01, Y00,
+                                        link = c("probit", "logit")) {
+  link <- match.arg(link)
   # Estimate parameters for the observed outcome
   fit_obs <- .EstimateControlParams(
     Y00 = Y00,
     Y01 = Y01,
-    Y10 = Y10
+    Y10 = Y10,
+    link = link
   )
 
   # Estimate parameters for the counterfactual outcome
@@ -451,7 +592,8 @@ ord_did <- function(
   prob_y11 <- .EstimateOutcomeProportions(
     mu = fit_cf$mu,
     sd = fit_cf$sd,
-    cutoff = fit_cf$cutoff
+    cutoff = fit_cf$cutoff,
+    link = link
   )
 
   return(list(
@@ -460,18 +602,21 @@ ord_did <- function(
   ))
 }
 
-.EstimateObservedDist <- function(Y11) {
+.EstimateObservedDist <- function(Y11, link = c("probit", "logit")) {
+  link <- match.arg(link)
   # Estimate parameters for the observed outcome
   fit_obs <- .EstimateLatentOutcomeParams(
     Ydt = Y11,
-    cutoff = NULL
+    cutoff = NULL,
+    link = link
   )
 
   # Estimate the outcome proportions
   prob_y11 <- .EstimateOutcomeProportions(
     mu = fit_obs$mu,
     sd = fit_obs$sd,
-    cutoff = fit_obs$cutoff
+    cutoff = fit_obs$cutoff,
+    link = link
   )
 
   return(list(

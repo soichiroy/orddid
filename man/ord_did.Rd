@@ -16,7 +16,8 @@ ord_did(
   covariates = NULL,
   fixed_index = 1,
   n_cores = NULL,
-  tau_assumption = c("none", "stochastic_dominance")
+  tau_assumption = c("none", "stochastic_dominance"),
+  semiparametric_regularization = c("ispline", "ridge")
 )
 }
 \arguments{
@@ -56,6 +57,11 @@ Lu, Zhang, and Ding (2020). \code{"stochastic_dominance"} imposes positive
 regression dependence on the joint distribution of the post-treatment
 potential outcomes and computes the tighter feasible bounds by linear
 programming. By default, both are returned.}
+
+\item{semiparametric_regularization}{Character; regularization used for the
+first-stage error CDF when \code{method = "semiparametric"}. The default
+\code{"ispline"} uses monotone I-spline smoothing; \code{"ridge"} uses the
+vanishing-ridge regularization. Ignored for other methods.}
 }
 \value{
 A list with components:
