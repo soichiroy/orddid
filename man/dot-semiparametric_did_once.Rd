@@ -2,7 +2,7 @@
 % Please edit documentation in R/orddid-semiparametric-did.R
 \name{.semiparametric_did_once}
 \alias{.semiparametric_did_once}
-\title{Full semiparametric DID estimation (single run, NPMLE method)}
+\title{Full semiparametric DID estimation for one sample}
 \usage{
 .semiparametric_did_once(
   Y00,
@@ -13,32 +13,44 @@
   X10,
   Y11,
   X11,
-  fixed_index = 2,
+  fixed_index = 2L,
   verbose = FALSE,
-  tau_assumption = "none"
+  tau_assumption = "none",
+  semiparametric_regularization = c("ispline", "ridge"),
+  regularization_n = NULL
 )
 }
 \arguments{
-\item{Y00, X00}{outcome and covariates for control pre}
+\item{Y00, X00}{outcomes and covariates for control pre}
 
-\item{Y01, X01}{outcome and covariates for control post}
+\item{Y01, X01}{outcomes and covariates for control post}
 
-\item{Y10, X10}{outcome and covariates for treated pre}
+\item{Y10, X10}{outcomes and covariates for treated pre}
 
-\item{Y11, X11}{outcome and covariates for treated post}
+\item{Y11, X11}{outcomes and covariates for treated post}
 
-\item{fixed_index}{which coefficient to normalize in Step 1}
+\item{fixed_index}{coefficient normalized to one in the internal `b=-beta`
+convention}
 
-\item{verbose}{print progress}
+\item{verbose}{print first-stage progress}
 
-\item{tau_assumption}{relative-effect bound assumptions passed to
-\code{.compute_semiparametric_effects()}}
+\item{tau_assumption}{relative-effect bound assumptions}
+
+\item{semiparametric_regularization}{final NPMLE regularization}
+
+\item{regularization_n}{independent-unit count used for ridge epsilon=1/n}
 }
 \value{
-list with all estimates and treatment effects
+estimates, effects, and first/second-stage diagnostics
 }
 \description{
-Pipeline: probit init -> PAVA -> interval-censoring NPMLE ->
-          I-spline smooth -> profile likelihood -> counterfactual
+The first stage uses an all-category ordered-probit initializer followed by
+two interval-censoring NPMLE, coefficient-moment, and cutoff-moment updates,
+as recommended for the implementation in the paper. A direct I-spline is
+used as a common numerical approximation when
+solving the first-stage moments, so the first-stage parameters are shared by
+both reported regularizations. A final raw NPMLE is recomputed at the updated
+parameters and then regularized by either an I-spline or the paper's
+vanishing ridge before the two profile-likelihood fits.
 }
 \keyword{internal}

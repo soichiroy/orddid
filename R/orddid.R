@@ -15,10 +15,14 @@
 #'   probit with covariates (uses normal CDF instead of semiparametric F).
 #' @param covariates Character vector of covariate column names (required for
 #'   \code{method = "semiparametric"} and \code{method = "parametric_covariates"}).
-#'   The first covariate should be a continuous variable with positive Lebesgue
-#'   density (no intercept is added; the cutpoints handle the baseline level).
+#'   The covariate selected by \code{fixed_index} should be continuous with
+#'   positive Lebesgue density. No intercept is added; if an intercept is
+#'   supplied explicitly, it is held fixed during the semiparametric moment
+#'   updates as an additional location normalization.
 #' @param fixed_index Integer; which column of the covariate matrix to normalize
-#'   in the semiparametric Step 1 (default 1, i.e., the first covariate).
+#'   to one in the semiparametric internal index \code{b = -beta} (default 1).
+#'   The ordered-probit initializer must estimate a positive coefficient for
+#'   this internal index orientation.
 #' @param n_cores Integer; number of cores for parallel computing. Default
 #'   \code{NULL} uses all available cores minus one.
 #' @param tau_assumption Character vector controlling how the relative-effect
@@ -27,14 +31,18 @@
 #'   regression dependence on the joint distribution of the post-treatment
 #'   potential outcomes and computes the tighter feasible bounds by linear
 #'   programming. By default, both are returned.
-#' @param semiparametric_regularization Character; regularization used for the
-#'   first-stage error CDF when \code{method = "semiparametric"}. The default
+#' @param semiparametric_regularization Character; regularization applied to the
+#'   final first-stage NPMLE before profile likelihood when
+#'   \code{method = "semiparametric"}. The default
 #'   \code{"ispline"} uses monotone I-spline smoothing; \code{"ridge"} uses the
 #'   vanishing-ridge regularization. Ignored for other methods.
 #' @return A list with components:
 #' \item{inputs}{Function arguments for reproducibility.}
 #' \item{estimate_effects}{Data frame of category-specific effects with CIs.}
 #' \item{relative_effects}{Data frame of relative treatment effect bounds with CIs.}
+#' \item{bootstrap_effects}{Matrix of category-effect bootstrap draws. Failed
+#'   draws are retained as rows of \code{NA}; present for covariate methods.}
+#' \item{point_diagnostics}{Convergence diagnostics for covariate methods.}
 #' @examples
 #'\donttest{
 #' ## load packages
@@ -277,7 +285,7 @@ ord_did <- function(
     stop("outcome must be coercible to ordered integer categories.")
   }
   y_vec <- y_vec - min(y_vec)
-  if (!identical(sort(unique(y_vec)), 0:2)) {
+  if (!identical(sort(unique(as.integer(y_vec))), 0:2)) {
     stop(
       "Covariate estimators currently require exactly three pooled outcome ",
       "categories, coded consecutively."
@@ -302,7 +310,7 @@ ord_did <- function(
   i10 <- cell_id == 3L
   i11 <- cell_id == 4L
 
-  if (!identical(sort(unique(y_vec[i00])), 0:2)) {
+  if (!identical(sort(unique(as.integer(y_vec[i00]))), 0:2)) {
     stop("The control-pre cell (Y00) must contain all three outcome categories 0:2.")
   }
   if (method == "semiparametric" &&
@@ -316,6 +324,10 @@ ord_did <- function(
     Y10 = y_vec[i10], X10 = X_mat[i10, , drop = FALSE],
     Y11 = y_vec[i11], X11 = X_mat[i11, , drop = FALSE]
   )
+
+  cluster_vec <- data_use[[cluster]]
+  cluster_idx <- split(seq_along(y_vec), cluster_vec, drop = TRUE)
+  n_clusters <- length(cluster_idx)
 
   ## Select estimation function based on method
   est_fn <- if (method == "semiparametric") {
@@ -339,6 +351,9 @@ ord_did <- function(
     if (method == "semiparametric") {
       fit_args$semiparametric_regularization <-
         semiparametric_regularization
+      ## Ridge regularization is indexed by the number of independent units,
+      ## which remains n_clusters under the cluster bootstrap.
+      fit_args$regularization_n <- n_clusters
     }
     do.call(est_fn, fit_args)
   }
@@ -355,16 +370,59 @@ ord_did <- function(
   if (J != 3L || any(!is.finite(point$zeta))) {
     stop("The point estimate did not return three finite category effects.")
   }
+  if (any(!is.finite(point$convergence)) || any(point$convergence != 0L)) {
+    warning(
+      "One or more point-estimation stages did not meet their numerical ",
+      "convergence criterion; inspect point_diagnostics.",
+      call. = FALSE
+    )
+  }
+  point_diagnostics <- list(convergence = point$convergence)
+  if (method == "semiparametric") {
+    point_diagnostics$regularization <- list(
+      method = point$semiparametric_regularization,
+      epsilon = point$regularization$eps,
+      support = point$regularization$u_range
+    )
+    point_diagnostics$first_stage <- list(
+      beta = point$beta_00,
+      alpha = point$alpha,
+      iterations = point$first_stage$iterations,
+      completed = point$first_stage$completed,
+      fixed_point_stable = point$first_stage$fixed_point_stable,
+      cycle_detected = point$first_stage$cycle_detected,
+      stop_reason = point$first_stage$stop_reason,
+      fixed_index = point$first_stage$fixed_index,
+      constant_index = point$first_stage$constant_index,
+      final_beta_score = point$first_stage$final_beta_score,
+      final_alpha_score = point$first_stage$final_alpha_score,
+      npmle_knots = point$first_stage$npmle$knots,
+      npmle_values = point$first_stage$npmle$values,
+      trace = lapply(point$first_stage$trace, function(x) {
+        x[c(
+          "iteration", "b", "alpha", "parameter_change",
+          "beta_score_norm", "alpha_score"
+        )]
+      })
+    )
+    point_diagnostics$profile <- lapply(point$profile_fits, function(x) {
+      x[c(
+        "loglik", "convergence", "optimizer", "analytic_gradient", "selected_start",
+        "candidate_fits"
+      )]
+    })
+  } else if (!is.null(point$profile_fits)) {
+    point_diagnostics$profile <- lapply(point$profile_fits, function(x) {
+      x[c(
+        "loglik", "convergence", "optimizer", "analytic_gradient", "selected_start",
+        "candidate_fits"
+      )]
+    })
+  }
 
   ## Bootstrap — precompute vectors and indices for fast resampling
-  cluster_vec <- data_use[[cluster]]
-
-  ## Cluster index: map each cluster to its row positions (integer vectors)
-  cluster_idx <- split(seq_along(y_vec), cluster_vec)
-  n_clusters  <- length(cluster_idx)
-
-  ## Draw the complete bootstrap plan in the calling R process. Workers only
-  ## consume these indices, so results do not depend on scheduling or n_cores.
+  ## Draw the complete bootstrap plan in the calling R process so the sampled
+  ## indices do not depend on worker scheduling or n_cores.
   bootstrap_cluster_samples <- lapply(seq_len(n_boot), function(b) {
     sample.int(n_clusters, n_clusters, replace = TRUE)
   })
@@ -417,7 +475,7 @@ ord_did <- function(
       b11 <- cell_b == 4L
 
       if (min(sum(b00), sum(b01), sum(b10), sum(b11)) < 10L ||
-          !identical(sort(unique(y_b[b00])), 0:2)) {
+          !identical(sort(unique(as.integer(y_b[b00]))), 0:2)) {
         return(NULL)
       }
 
@@ -432,17 +490,22 @@ ord_did <- function(
       )
 
       if (is.null(fit_b) || length(fit_b$zeta) != J ||
-          any(!is.finite(fit_b$zeta))) {
+          any(!is.finite(fit_b$zeta)) ||
+          any(!is.finite(fit_b$convergence)) ||
+          any(fit_b$convergence != 0L)) {
         return(NULL)
       }
-      fit_b
+      ## Do not retain NPMLE objects, spline closures, or optimizer traces for
+      ## thousands of bootstrap draws.
+      list(zeta = fit_b$zeta, tau = fit_b$tau)
     }
   }
 
   ## Collect results
-  boot_zeta <- matrix(NA, n_boot, J)
+  boot_zeta <- matrix(NA_real_, nrow = n_boot, ncol = J)
+  colnames(boot_zeta) <- paste0("zeta_", seq_len(J))
   boot_tau <- vector("list", n_boot)
-  n_fail <- 0
+  n_fail <- 0L
 
   for (b in seq_len(n_boot)) {
     if (!is.null(boot_results[[b]])) {
@@ -460,7 +523,7 @@ ord_did <- function(
     apply(boot_zeta, 1L, function(z) all(is.finite(z)))
   }
 
-  zeta_lower <- zeta_upper <- rep(NA, J)
+  zeta_lower <- zeta_upper <- rep(NA_real_, J)
   if (sum(valid) > 10) {
     for (j in seq_len(J)) {
       qq <- stats::quantile(boot_zeta[valid, j], c(0.025, 0.975))
@@ -503,38 +566,8 @@ ord_did <- function(
     estimate_effects = diff_res,
     relative_effects = relative_res,
     n_boot_fail = n_fail,
-    bootstrap_effects = boot_zeta
-  )
-}
-
-#' Extract cell data for semiparametric estimation
-#' @keywords internal
-.extract_semiparametric_cells <- function(data, outcome, post, treat, x_cols) {
-  y <- data[[outcome]]
-  p <- as.logical(data[[post]])
-  t <- as.logical(data[[treat]])
-
-  keep <- !(is.na(y) | is.na(p) | is.na(t))
-  y <- y[keep]; p <- p[keep]; t <- t[keep]
-  data_k <- data[keep, , drop = FALSE]
-
-  ## Recode Y to 0-indexed (0, 1, ..., J-1) if it starts from a higher value
-  y <- as.integer(y) - min(as.integer(y))
-
-  ## Build design matrix (no intercept; cutpoints handle the baseline level,
-  ## and in the semiparametric model F(0) is estimated nonparametrically)
-  X <- as.matrix(data_k[, x_cols, drop = FALSE])
-
-  i00 <- !p & !t
-  i01 <-  p & !t
-  i10 <- !p &  t
-  i11 <-  p &  t
-
-  list(
-    Y00 = y[i00], X00 = X[i00, , drop = FALSE],
-    Y01 = y[i01], X01 = X[i01, , drop = FALSE],
-    Y10 = y[i10], X10 = X[i10, , drop = FALSE],
-    Y11 = y[i11], X11 = X[i11, , drop = FALSE]
+    bootstrap_effects = boot_zeta,
+    point_diagnostics = point_diagnostics
   )
 }
 

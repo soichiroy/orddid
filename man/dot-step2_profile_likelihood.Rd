@@ -2,7 +2,7 @@
 % Please edit documentation in R/orddid-semiparametric-profile.R
 \name{.step2_profile_likelihood}
 \alias{.step2_profile_likelihood}
-\title{Profile likelihood estimator for a single (d,t) cell}
+\title{Profile likelihood estimator for one treatment-by-period cell}
 \usage{
 .step2_profile_likelihood(
   Y,
@@ -11,29 +11,43 @@
   kappa,
   beta_init = NULL,
   xi_init = NULL,
-  ftilde = NULL
+  ftilde = NULL,
+  optimizer = c("BFGS", "Nelder-Mead", "both"),
+  multistart = TRUE
 )
 }
 \arguments{
-\item{Y}{integer vector of outcomes (0, 1, ..., J-1)}
+\item{Y}{integer outcomes coded 0, ..., J-1}
 
-\item{X}{n x p design matrix (with intercept column)}
+\item{X}{design matrix}
 
-\item{Ftilde}{smoothed CDF function from .smooth_Fhat()$Ftilde}
+\item{Ftilde}{regularized CDF}
 
-\item{kappa}{cutoff vector c(-Inf, 0, alpha, Inf) from Step 1}
+\item{kappa}{cutoff vector}
 
-\item{beta_init}{optional initial value for beta (length p)}
+\item{beta_init}{initial location coefficients}
 
-\item{xi_init}{optional initial value for xi (length p)}
+\item{xi_init}{initial log-scale coefficients}
 
-\item{ftilde}{smoothed density function (if provided, analytical gradient
-is used for BFGS, avoiding finite-difference approximation)}
+\item{ftilde}{density for analytic BFGS gradients, or NULL}
+
+\item{optimizer}{optimization method}
+
+\item{multistart}{whether to use deterministic alternative starts}
 }
 \value{
-list with beta, xi, loglik, convergence
+estimates, selected likelihood, and per-start diagnostics
 }
 \description{
-Profile likelihood estimator for a single (d,t) cell
+Fits
+`P(Y=j|X) = F((kappa[j+1]-X beta)/exp(X xi)) -
+F((kappa[j]-X beta)/exp(X xi))`.
+}
+\details{
+Multiple deterministic starts are evaluated. The largest finite likelihood
+among converged candidates is retained; nonconverged candidates are used
+only when no candidate converged. With no analytic density, BFGS uses finite
+differences. `optimizer = "both"` evaluates BFGS and Nelder-Mead from every
+start, which is useful for regularized CDFs with finite jumps.
 }
 \keyword{internal}

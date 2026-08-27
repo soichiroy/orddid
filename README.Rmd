@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 # orddid
 
 <!-- badges: start -->
-`r badger::badge_devel("soichiroy/orddid", "blue")`
+[![](https://img.shields.io/badge/devel%20version-1.2.0-blue.svg)](https://github.com/soichiroy/orddid)
 [![Codecov test coverage](https://codecov.io/gh/soichiroy/orddid/branch/master/graph/badge.svg)](https://codecov.io/gh/soichiroy/orddid?branch=master)
 [![R build status](https://github.com/soichiroy/orddid/workflows/R-CMD-check/badge.svg)](https://github.com/soichiroy/orddid/actions)
 <!-- badges: end -->
@@ -91,8 +91,22 @@ The semiparametric estimator adjusts for covariates using an NPMLE-based
 approach. The `gun_twowave_cov` dataset is a smaller subset of the panel
 augmented with IRT ideology scores and demographics.
 
-The first covariate should be continuous with positive Lebesgue density.
-Here `ideology` (an IRT score) satisfies this requirement.
+The covariate selected by `fixed_index` (the first by default) must be
+continuous, nonconstant, and oriented so its coefficient in the package's
+internal index is positive. Here `ideology` (an IRT score) satisfies this
+requirement. The default semiparametric regularization is an I-spline; the
+ridge version is selected with `semiparametric_regularization = "ridge"`.
+Both use the paper's two alternating first-stage updates followed by a final
+NPMLE refit; fixed-point and optimizer diagnostics are returned in
+`point_diagnostics`.
+
+The three estimators used in the paper's simulation are available through the
+same interface: use `method = "parametric_covariates"` for probit,
+`method = "semiparametric"` for NPMLE plus I-spline, and add
+`semiparametric_regularization = "ridge"` for NPMLE plus ridge. For the
+Appendix design `covariates = c("intercept", "X1", "X2")`, use
+`fixed_index = 2`; the intercept is held fixed and the continuous `X1`
+coefficient is normalized.
 
 ```{r semi-fit, warning = FALSE}
 data("gun_twowave_cov")
@@ -114,7 +128,7 @@ fit_semi <- ord_did(
   post       = "post",
   treat      = "treat",
   cluster    = "reszip",
-  n_boot     = 50,
+  n_boot     = 0, # keep the rendered example fast; use 500+ for inference
   method     = "semiparametric",
   covariates = c("ideology", "ideology2", "female", "educ")
 )

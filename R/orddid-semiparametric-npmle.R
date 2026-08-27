@@ -1,90 +1,70 @@
 ## ============================================================
 ## orddid-semiparametric-npmle.R
-## Interval-censoring NPMLE for error distribution + smooth alpha
+## Interval-censoring NPMLE for the three-category model
 ## ============================================================
 
-#' Estimate cutoff alpha using the smoothed Ftilde
+#' Compute the joint NPMLE using all three ordinal categories
 #'
-#' Solves: mean(1 - 1\{Y = max(Y)\} - Ftilde(X'b + alpha)) = 0
+#' Under the internal convention `b = -beta`, the error intervals are
+#' `(-Inf, Xb]`, `(Xb, Xb + alpha]`, and `(Xb + alpha, Inf)`.
 #'
-#' @param Y00    outcomes for (D=0, t=0) cell
-#' @param X00    design matrix
-#' @param b_00   Step 1 index coefficients
-#' @param Ftilde smoothed CDF function
-#' @return estimated alpha, or NA if root-finding fails
-#' @keywords internal
-.estimate_alpha_smooth <- function(Y00, X00, b_00, Ftilde) {
-  u     <- as.numeric(X00 %*% b_00)
-  y_max <- max(Y00)
-  y3    <- as.integer(Y00 == y_max)
-
-  psi <- function(a) mean(1 - y3 - Ftilde(u + a))
-
-  lo <- 0
-  hi <- 2 * diff(range(u))
-
-  for (i in 1:20) {
-    if (psi(hi) <= 0) break
-    hi <- hi * 2
-  }
-  if (psi(hi) > 0) return(NA)
-
-  tryCatch(
-    stats::uniroot(psi, lower = lo, upper = hi, tol = 1e-8)$root,
-    error = function(e) NA
-  )
-}
-
-#' Compute joint NPMLE for error distribution using all ordinal categories
-#'
-#' Treats ordered response as interval-censored data:
-#'   Y = min: epsilon in (-Inf, u_i]
-#'   Y = middle: epsilon in (u_i, u_i+alpha]
-#'   Y = max: epsilon in (u_i+alpha, Inf)
-#'
-#' @param Y00   outcomes for (D=0, t=0) cell
-#' @param X00   design matrix
-#' @param b_00  Step 1 index coefficients
-#' @param alpha cutoff parameter
-#' @return list with Ftilde, knots, values; or NULL on failure
+#' @param Y00 integer outcomes coded 0, 1, 2
+#' @param X00 design matrix
+#' @param b_00 normalized index coefficients
+#' @param alpha positive second cutoff
+#' @return list with sorted `knots`, monotone `values`, and the fitted object
 #' @keywords internal
 .compute_joint_npmle <- function(Y00, X00, b_00, alpha) {
-
-  if (!requireNamespace("icenReg", quietly = TRUE)) {
-    stop("Package 'icenReg' is required for NPMLE estimation. ",
-         "Install it with install.packages('icenReg').")
+  Y00 <- as.integer(Y00)
+  X00 <- as.matrix(X00)
+  if (anyNA(Y00) || !identical(sort(unique(Y00)), 0:2)) {
+    stop("Y00 must contain exactly the three categories 0, 1, and 2.")
+  }
+  if (nrow(X00) != length(Y00) || ncol(X00) != length(b_00) ||
+      any(!is.finite(X00)) || any(!is.finite(b_00))) {
+    stop("Y00, X00, and b_00 have incompatible dimensions.")
+  }
+  if (length(alpha) != 1L || !is.finite(alpha) || alpha <= 0) {
+    stop("alpha must be one positive finite cutoff.")
   }
 
-  u     <- as.numeric(X00 %*% b_00)
-  n     <- length(Y00)
-  y_min <- min(Y00)
-  y_max <- max(Y00)
+  u <- as.numeric(X00 %*% b_00)
+  lower <- ifelse(Y00 == 0L, -Inf, ifelse(Y00 == 1L, u, u + alpha))
+  upper <- ifelse(Y00 == 0L, u, ifelse(Y00 == 1L, u + alpha, Inf))
+  interval_data <- data.frame(lower = lower, upper = upper)
 
-  L <- R <- numeric(n)
-  for (i in seq_len(n)) {
-    if (Y00[i] == y_min) {
-      L[i] <- -Inf; R[i] <- u[i]
-    } else if (Y00[i] == y_max) {
-      L[i] <- u[i] + alpha; R[i] <- Inf
-    } else {
-      L[i] <- u[i]; R[i] <- u[i] + alpha
-    }
-  }
-
-  df  <- data.frame(L = L, R = R)
-  fit <- tryCatch(icenReg::ic_np(cbind(L, R) ~ 0, data = df),
-                  error = function(e) NULL)
+  fit <- tryCatch(
+    icenReg::ic_np(cbind(lower, upper) ~ 0, data = interval_data),
+    error = function(e) NULL
+  )
   if (is.null(fit)) return(NULL)
 
-  sc        <- icenReg::getSCurves(fit)
-  t_vals    <- sc$Tbull_ints[, 1]
-  S_vals    <- sc$S_curves$baseline
-  finite_idx <- is.finite(t_vals)
-  t_fin     <- t_vals[finite_idx]
-  F_fin     <- pmin(pmax((1 - S_vals)[finite_idx], 0), 1)
-  if (length(t_fin) < 2) return(NULL)
+  curves <- icenReg::getSCurves(fit)
+  raw <- list(
+    knots = curves$Tbull_ints[, 1L],
+    values = 1 - curves$S_curves$baseline
+  )
+  step <- tryCatch(.prepare_step_cdf(raw), error = function(e) NULL)
+  if (is.null(step)) return(NULL)
 
-  Ftilde <- stats::approxfun(t_fin, F_fin, method = "constant",
-                              rule = 2, f = 0, ties = mean)
-  list(Ftilde = Ftilde, knots = t_fin, values = F_fin)
+  Fhat_inside <- stats::approxfun(
+    step$knots,
+    step$values,
+    method = "constant",
+    rule = 2,
+    f = 0,
+    ties = max
+  )
+  Fhat <- function(u) {
+    value <- Fhat_inside(pmin(pmax(u, min(step$knots)), max(step$knots)))
+    value[u < min(step$knots)] <- 0
+    value[u > max(step$knots)] <- 1
+    value
+  }
+  list(
+    Ftilde = Fhat,
+    knots = step$knots,
+    values = step$values,
+    fit = fit
+  )
 }

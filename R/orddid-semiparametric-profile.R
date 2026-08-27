@@ -1,149 +1,262 @@
 ## ============================================================
 ## orddid-semiparametric-profile.R
-## Profile likelihood for Step 2: estimate (beta_dt, xi_dt)
-##
-## Convention:
-##   P(Y = j | X) = Ftilde((kappa_{j+1} - X'beta) / exp(X'xi))
-##                - Ftilde((kappa_j   - X'beta) / exp(X'xi))
+## Profile likelihood for the control-post and treated-pre cells
 ## ============================================================
 
-#' Profile likelihood estimator for a single (d,t) cell
-#'
-#' @param Y       integer vector of outcomes (0, 1, ..., J-1)
-#' @param X       n x p design matrix (with intercept column)
-#' @param Ftilde  smoothed CDF function from .smooth_Fhat()$Ftilde
-#' @param kappa   cutoff vector c(-Inf, 0, alpha, Inf) from Step 1
-#' @param beta_init optional initial value for beta (length p)
-#' @param xi_init   optional initial value for xi (length p)
-#' @param ftilde  smoothed density function (if provided, analytical gradient
-#'   is used for BFGS, avoiding finite-difference approximation)
-#' @return list with beta, xi, loglik, convergence
+#' Select a profile candidate, prioritizing successful optimization
+#' @param fits list of profile optimization results
+#' @return integer index of the selected fit
 #' @keywords internal
-.step2_profile_likelihood <- function(Y, X, Ftilde, kappa,
-                                      beta_init = NULL,
-                                      xi_init = NULL,
-                                      ftilde = NULL) {
+.select_profile_fit <- function(fits) {
+  if (!length(fits)) stop("No profile-likelihood candidates were supplied.")
+  values <- vapply(fits, function(fit) fit$value, numeric(1))
+  converged <- which(vapply(
+    fits,
+    function(fit) isTRUE(fit$convergence == 0L),
+    logical(1)
+  ))
+  eligible <- if (length(converged)) converged else seq_along(fits)
+  eligible[which.min(values[eligible])]
+}
 
+#' Profile likelihood estimator for one treatment-by-period cell
+#'
+#' Fits
+#' `P(Y=j|X) = F((kappa[j+1]-X beta)/exp(X xi)) -
+#' F((kappa[j]-X beta)/exp(X xi))`.
+#'
+#' Multiple deterministic starts are evaluated. The largest finite likelihood
+#' among converged candidates is retained; nonconverged candidates are used
+#' only when no candidate converged. With no analytic density, BFGS uses finite
+#' differences. `optimizer = "both"` evaluates BFGS and Nelder-Mead from every
+#' start, which is useful for regularized CDFs with finite jumps.
+#'
+#' @param Y integer outcomes coded 0, ..., J-1
+#' @param X design matrix
+#' @param Ftilde regularized CDF
+#' @param kappa cutoff vector
+#' @param beta_init initial location coefficients
+#' @param xi_init initial log-scale coefficients
+#' @param ftilde density for analytic BFGS gradients, or NULL
+#' @param optimizer optimization method
+#' @param multistart whether to use deterministic alternative starts
+#' @return estimates, selected likelihood, and per-start diagnostics
+#' @keywords internal
+.step2_profile_likelihood <- function(
+    Y, X, Ftilde, kappa, beta_init = NULL, xi_init = NULL,
+    ftilde = NULL, optimizer = c("BFGS", "Nelder-Mead", "both"),
+    multistart = TRUE) {
+  optimizer <- match.arg(optimizer)
+  Y <- as.integer(Y)
+  X <- as.matrix(X)
   n <- length(Y)
   p <- ncol(X)
-  J <- length(kappa) - 1
-
-  ind <- matrix(0, n, J)
-  for (j in seq_len(J)) {
-    ind[, j] <- as.integer(Y == (j - 1))
+  J <- length(kappa) - 1L
+  if (nrow(X) != n || any(!is.finite(X)) || anyNA(Y) ||
+      any(Y < 0L | Y >= J) || length(unique(Y)) < 2L) {
+    stop("Y, X, and kappa do not define a valid profile-likelihood cell.")
   }
+
+  indicators <- matrix(0, n, J)
+  for (j in seq_len(J)) indicators[, j] <- as.integer(Y == (j - 1L))
 
   if (is.null(beta_init)) {
-    y1 <- as.integer(Y == 0)
-    beta_init <- tryCatch({
-      c_hat <- stats::coef(stats::glm(y1 ~ X - 1,
-                                       family = stats::binomial(link = "probit")))
-      -as.numeric(c_hat)
-    }, error = function(e) {
-      rep(0, p)
-    })
+    y0 <- as.integer(Y == 0L)
+    beta_init <- tryCatch(
+      -as.numeric(stats::coef(stats::glm(
+        y0 ~ X - 1,
+        family = stats::binomial(link = "probit")
+      ))),
+      error = function(e) rep(0, p)
+    )
+  }
+  if (is.null(xi_init)) xi_init <- rep(0, p)
+  if (length(beta_init) != p || length(xi_init) != p ||
+      any(!is.finite(c(beta_init, xi_init)))) {
+    stop("beta_init and xi_init must be finite vectors with ncol(X) entries.")
   }
 
-  if (is.null(xi_init)) {
-    xi_init <- rep(0, p)
-  }
-
-  theta_init <- c(beta_init, xi_init)
-
-  ## Precompute which kappa values are finite (avoids per-call ifelse)
   kappa_finite <- is.finite(kappa)
+  cache <- new.env(parent = emptyenv())
+  cache$theta <- NULL
 
-  ## Cache for combined fn+gradient evaluation (BFGS calls fn and gr
-  ## at the same theta, so we avoid computing twice)
-  .cache <- new.env(parent = emptyenv())
-  .cache$theta <- NULL
-  .cache$val   <- NULL
-  .cache$grad  <- NULL
-
-  .eval_at <- function(theta) {
-    if (identical(theta, .cache$theta)) return(invisible(NULL))
-
-    beta  <- theta[1:p]
-    xi    <- theta[(p + 1):(2 * p)]
-    mu    <- as.numeric(X %*% beta)
-    sigma <- exp(as.numeric(X %*% xi))
-
-    ll <- 0
-    dll_dbeta <- rep(0, p)
-    dll_dxi   <- rep(0, p)
-    has_grad  <- !is.null(ftilde)
+  evaluate <- function(theta) {
+    if (identical(theta, cache$theta)) return(invisible(NULL))
+    beta <- theta[seq_len(p)]
+    xi <- theta[p + seq_len(p)]
+    mu <- as.numeric(X %*% beta)
+    eta <- as.numeric(X %*% xi)
+    if (any(!is.finite(c(mu, eta))) || any(abs(eta) > 30)) {
+      cache$theta <- theta
+      cache$value <- 1e100
+      cache$gradient <- rep(0, 2L * p)
+      return(invisible(NULL))
+    }
+    sigma <- exp(eta)
+    has_gradient <- !is.null(ftilde) && optimizer != "Nelder-Mead"
+    log_likelihood <- 0
+    score_beta <- rep(0, p)
+    score_xi <- rep(0, p)
 
     for (j in seq_len(J)) {
-      ## Lower bound
       if (kappa_finite[j]) {
-        u_lo <- (kappa[j] - mu) / sigma
-        F_lo <- Ftilde(u_lo)
-        f_lo <- if (has_grad) ftilde(u_lo) else NULL
+        u_lower <- (kappa[j] - mu) / sigma
+        F_lower <- Ftilde(u_lower)
+        f_lower <- if (has_gradient) ftilde(u_lower) else NULL
       } else {
-        u_lo <- rep(if (kappa[j] < 0) -Inf else Inf, n)
-        F_lo <- rep(if (kappa[j] < 0) 0 else 1, n)
-        f_lo <- if (has_grad) rep(0, n) else NULL
+        u_lower <- rep(-Inf, n)
+        F_lower <- rep(0, n)
+        f_lower <- if (has_gradient) rep(0, n) else NULL
+      }
+      if (kappa_finite[j + 1L]) {
+        u_upper <- (kappa[j + 1L] - mu) / sigma
+        F_upper <- Ftilde(u_upper)
+        f_upper <- if (has_gradient) ftilde(u_upper) else NULL
+      } else {
+        u_upper <- rep(Inf, n)
+        F_upper <- rep(1, n)
+        f_upper <- if (has_gradient) rep(0, n) else NULL
+      }
+      if (any(!is.finite(c(F_lower, F_upper)))) {
+        log_likelihood <- -1e100
+        break
       }
 
-      ## Upper bound
-      if (kappa_finite[j + 1]) {
-        u_hi <- (kappa[j + 1] - mu) / sigma
-        F_hi <- Ftilde(u_hi)
-        f_hi <- if (has_grad) ftilde(u_hi) else NULL
-      } else {
-        u_hi <- rep(if (kappa[j + 1] < 0) -Inf else Inf, n)
-        F_hi <- rep(if (kappa[j + 1] < 0) 0 else 1, n)
-        f_hi <- if (has_grad) rep(0, n) else NULL
-      }
+      probability <- pmax(F_upper - F_lower, 1e-12)
+      log_likelihood <- log_likelihood +
+        sum(indicators[, j] * log(probability))
 
-      prob_j <- pmax(F_hi - F_lo, 1e-12)
-      ll <- ll + sum(ind[, j] * log(prob_j))
-
-      if (has_grad) {
-        w_j <- ind[, j] / prob_j
-
-        ## d P_j / d beta_k = (f_lo - f_hi) * x_k / sigma
-        dll_dbeta <- dll_dbeta +
-          as.numeric(crossprod(X, w_j * (f_lo - f_hi) / sigma))
-
-        ## d P_j / d xi_k = (f_lo*u_lo - f_hi*u_hi) * x_k
-        ## Handle 0 * Inf = 0 for boundary terms
-        fu_lo <- ifelse(f_lo == 0, 0, f_lo * u_lo)
-        fu_hi <- ifelse(f_hi == 0, 0, f_hi * u_hi)
-        dll_dxi <- dll_dxi +
-          as.numeric(crossprod(X, w_j * (fu_lo - fu_hi)))
+      if (has_gradient) {
+        weight <- indicators[, j] / probability
+        score_beta <- score_beta + as.numeric(crossprod(
+          X, weight * (f_lower - f_upper) / sigma
+        ))
+        f_u_lower <- ifelse(f_lower == 0, 0, f_lower * u_lower)
+        f_u_upper <- ifelse(f_upper == 0, 0, f_upper * u_upper)
+        score_xi <- score_xi + as.numeric(crossprod(
+          X, weight * (f_u_lower - f_u_upper)
+        ))
       }
     }
 
-    .cache$theta <- theta
-    .cache$val   <- -ll
-    .cache$grad  <- if (has_grad) -c(dll_dbeta, dll_dxi) else NULL
+    cache$theta <- theta
+    cache$value <- -log_likelihood
+    cache$gradient <- if (has_gradient) {
+      -c(score_beta, score_xi)
+    } else {
+      NULL
+    }
   }
-
-  negloglik <- function(theta) {
-    .eval_at(theta)
-    .cache$val
+  objective <- function(theta) {
+    evaluate(theta)
+    cache$value
   }
-
-  grad_negloglik <- if (!is.null(ftilde)) {
+  gradient <- if (!is.null(ftilde) && optimizer != "Nelder-Mead") {
     function(theta) {
-      .eval_at(theta)
-      .cache$grad
+      evaluate(theta)
+      cache$gradient
     }
   } else {
     NULL
   }
 
-  fit <- stats::optim(theta_init, negloglik,
-                      gr = grad_negloglik,
-                      method = "BFGS",
-                      control = list(maxit = 500, reltol = 1e-8))
+  base_start <- c(beta_init, xi_init)
+  starts <- list(base_start)
+  if (isTRUE(multistart)) {
+    cell_beta <- tryCatch(
+      .ordered_probit_mle(Y, X)$beta,
+      error = function(e) beta_init
+    )
+    if (length(cell_beta) != p || any(!is.finite(cell_beta))) {
+      cell_beta <- beta_init
+    }
+    starts[[2L]] <- c(cell_beta, rep(0, p))
+
+    location_direction <- tryCatch(
+      solve(
+        crossprod(X) + diag(1e-8, p),
+        as.numeric(crossprod(X, rep(1, n)))
+      ),
+      error = function(e) rep(0, p)
+    )
+    direction_scale <- sqrt(mean(as.numeric(X %*% location_direction)^2))
+    if (!is.finite(direction_scale) || direction_scale <= 1e-10) {
+      location_direction <- rep(0, p)
+    } else {
+      location_direction <- location_direction / direction_scale
+    }
+    scale_shift <- log(1.5) * location_direction
+    starts[[3L]] <- c(beta_init, xi_init + scale_shift)
+    starts[[4L]] <- c(beta_init, xi_init - scale_shift)
+  }
+
+  start_matrix <- do.call(rbind, starts)
+  start_key <- apply(round(start_matrix, 12L), 1L, paste, collapse = ":")
+  starts <- starts[!duplicated(start_key)]
+  run_optimizer <- function(start, start_id, method) {
+    fit <- tryCatch(
+      if (method == "BFGS") {
+        stats::optim(
+          start, objective, gr = gradient, method = "BFGS",
+          control = list(maxit = 500L, reltol = 1e-8)
+        )
+      } else {
+        stats::optim(
+          start, objective, method = "Nelder-Mead",
+          control = list(maxit = 1500L, reltol = 1e-8)
+        )
+      },
+      error = function(e) NULL
+    )
+    if (is.null(fit) || !is.finite(fit$value) || fit$value >= 1e99 ||
+        any(!is.finite(fit$par))) {
+      return(NULL)
+    }
+    fit$start_id <- start_id
+    fit$start <- start
+    fit$optimizer <- method
+    fit$analytic_gradient <- method == "BFGS" && !is.null(gradient)
+    fit
+  }
+
+  methods <- if (optimizer == "both") {
+    c("BFGS", "Nelder-Mead")
+  } else {
+    optimizer
+  }
+  fits <- unlist(lapply(seq_along(starts), function(start_id) {
+    lapply(methods, function(method) {
+      run_optimizer(starts[[start_id]], start_id, method)
+    })
+  }), recursive = FALSE)
+  fits <- Filter(Negate(is.null), fits)
+  if (!length(fits)) stop("All profile-likelihood optimization starts failed.")
+
+  negative_log_likelihoods <- vapply(fits, function(fit) fit$value, numeric(1))
+  selected <- fits[[.select_profile_fit(fits)]]
+  candidate_fits <- data.frame(
+    start_id = vapply(fits, function(fit) fit$start_id, integer(1)),
+    loglik = -negative_log_likelihoods,
+    convergence = vapply(fits, function(fit) fit$convergence, integer(1)),
+    optimizer = vapply(fits, function(fit) fit$optimizer, character(1)),
+    analytic_gradient = vapply(
+      fits,
+      function(fit) fit$analytic_gradient,
+      logical(1)
+    ),
+    stringsAsFactors = FALSE
+  )
 
   list(
-    beta        = fit$par[1:p],
-    xi          = fit$par[(p + 1):(2 * p)],
-    loglik      = -fit$value,
-    convergence = fit$convergence,
-    message     = fit$message
+    beta = selected$par[seq_len(p)],
+    xi = selected$par[p + seq_len(p)],
+    loglik = -selected$value,
+    convergence = selected$convergence,
+    message = selected$message,
+    optimizer = selected$optimizer,
+    analytic_gradient = selected$analytic_gradient,
+    selected_start = selected$start_id,
+    candidate_fits = candidate_fits,
+    candidate_parameters = lapply(fits, function(fit) fit$par)
   )
 }

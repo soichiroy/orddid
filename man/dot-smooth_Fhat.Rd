@@ -2,23 +2,24 @@
 % Please edit documentation in R/orddid-semiparametric-smoothing.R
 \name{.smooth_Fhat}
 \alias{.smooth_Fhat}
-\title{Smooth an isotonic step-function CDF using I-splines}
+\title{Smooth a step-function NPMLE using an I-spline}
 \usage{
 .smooth_Fhat(Fhat, n0, K = NULL, degree = 3)
 }
 \arguments{
-\item{Fhat}{FhatIsotonic object (or list with $knots, $values)}
+\item{Fhat}{list with numeric components `knots` and `values`}
 
-\item{n0}{sample size of the (D=0,t=0) cell (for choosing K)}
+\item{n0}{sample size of the control-pre cell}
 
-\item{K}{number of internal knots; if NULL, uses floor(n0^(1/3))}
+\item{K}{number of requested internal knots; defaults to floor(n0^(1/3))}
 
-\item{degree}{spline degree (default 3, giving C^2 smoothness)}
+\item{degree}{spline degree}
 }
 \value{
-list with Ftilde (smoothed CDF), ftilde (density), coef, knot_seq
+list containing CDF and density functions and fit details
 }
 \description{
-Smooth an isotonic step-function CDF using I-splines
+The returned functions evaluate the spline basis directly. This avoids the
+optimizer-dependent approximation introduced by interpolating a fixed grid.
 }
 \keyword{internal}

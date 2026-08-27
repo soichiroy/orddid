@@ -42,11 +42,15 @@ probit with covariates (uses normal CDF instead of semiparametric F).}
 
 \item{covariates}{Character vector of covariate column names (required for
 \code{method = "semiparametric"} and \code{method = "parametric_covariates"}).
-The first covariate should be a continuous variable with positive Lebesgue
-density (no intercept is added; the cutpoints handle the baseline level).}
+The covariate selected by \code{fixed_index} should be continuous with
+positive Lebesgue density. No intercept is added; if an intercept is
+supplied explicitly, it is held fixed during the semiparametric moment
+updates as an additional location normalization.}
 
 \item{fixed_index}{Integer; which column of the covariate matrix to normalize
-in the semiparametric Step 1 (default 1, i.e., the first covariate).}
+to one in the semiparametric internal index \code{b = -beta} (default 1).
+The ordered-probit initializer must estimate a positive coefficient for
+this internal index orientation.}
 
 \item{n_cores}{Integer; number of cores for parallel computing. Default
 \code{NULL} uses all available cores minus one.}
@@ -58,8 +62,9 @@ regression dependence on the joint distribution of the post-treatment
 potential outcomes and computes the tighter feasible bounds by linear
 programming. By default, both are returned.}
 
-\item{semiparametric_regularization}{Character; regularization used for the
-first-stage error CDF when \code{method = "semiparametric"}. The default
+\item{semiparametric_regularization}{Character; regularization applied to the
+final first-stage NPMLE before profile likelihood when
+\code{method = "semiparametric"}. The default
 \code{"ispline"} uses monotone I-spline smoothing; \code{"ridge"} uses the
 vanishing-ridge regularization. Ignored for other methods.}
 }
@@ -68,6 +73,9 @@ A list with components:
 \item{inputs}{Function arguments for reproducibility.}
 \item{estimate_effects}{Data frame of category-specific effects with CIs.}
 \item{relative_effects}{Data frame of relative treatment effect bounds with CIs.}
+\item{bootstrap_effects}{Matrix of category-effect bootstrap draws. Failed
+  draws are retained as rows of \code{NA}; present for covariate methods.}
+\item{point_diagnostics}{Convergence diagnostics for covariate methods.}
 }
 \description{
 \code{ord_did()} implements the difference-in-differences for the ordinal outcome.

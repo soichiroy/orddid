@@ -2,26 +2,24 @@
 % Please edit documentation in R/orddid-semiparametric-npmle.R
 \name{.compute_joint_npmle}
 \alias{.compute_joint_npmle}
-\title{Compute joint NPMLE for error distribution using all ordinal categories}
+\title{Compute the joint NPMLE using all three ordinal categories}
 \usage{
 .compute_joint_npmle(Y00, X00, b_00, alpha)
 }
 \arguments{
-\item{Y00}{outcomes for (D=0, t=0) cell}
+\item{Y00}{integer outcomes coded 0, 1, 2}
 
 \item{X00}{design matrix}
 
-\item{b_00}{Step 1 index coefficients}
+\item{b_00}{normalized index coefficients}
 
-\item{alpha}{cutoff parameter}
+\item{alpha}{positive second cutoff}
 }
 \value{
-list with Ftilde, knots, values; or NULL on failure
+list with sorted `knots`, monotone `values`, and the fitted object
 }
 \description{
-Treats ordered response as interval-censored data:
-  Y = min: epsilon in (-Inf, u_i]
-  Y = middle: epsilon in (u_i, u_i+alpha]
-  Y = max: epsilon in (u_i+alpha, Inf)
+Under the internal convention `b = -beta`, the error intervals are
+`(-Inf, Xb]`, `(Xb, Xb + alpha]`, and `(Xb + alpha, Inf)`.
 }
 \keyword{internal}

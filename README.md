@@ -96,8 +96,23 @@ The semiparametric estimator adjusts for covariates using an NPMLE-based
 approach. The `gun_twowave_cov` dataset is a smaller subset of the panel
 augmented with IRT ideology scores and demographics.
 
-The first covariate should be continuous with positive Lebesgue density.
-Here `ideology` (an IRT score) satisfies this requirement.
+The covariate selected by `fixed_index` (the first by default) must be
+continuous, nonconstant, and oriented so its coefficient in the
+package’s internal index is positive. Here `ideology` (an IRT score)
+satisfies this requirement. The default semiparametric regularization is
+an I-spline; the ridge version is selected with
+`semiparametric_regularization = "ridge"`. Both use the paper’s two
+alternating first-stage updates followed by a final NPMLE refit;
+fixed-point and optimizer diagnostics are returned in
+`point_diagnostics`.
+
+The three estimators used in the paper’s simulation are available
+through the same interface: use `method = "parametric_covariates"` for
+probit, `method = "semiparametric"` for NPMLE plus I-spline, and add
+`semiparametric_regularization = "ridge"` for NPMLE plus ridge. For the
+Appendix design `covariates = c("intercept", "X1", "X2")`, use
+`fixed_index = 2`; the intercept is held fixed and the continuous `X1`
+coefficient is normalized.
 
 ``` r
 data("gun_twowave_cov")
@@ -119,7 +134,7 @@ fit_semi <- ord_did(
   post       = "post",
   treat      = "treat",
   cluster    = "reszip",
-  n_boot     = 50,
+  n_boot     = 0, # keep the rendered example fast; use 500+ for inference
   method     = "semiparametric",
   covariates = c("ideology", "ideology2", "female", "educ")
 )
@@ -127,19 +142,19 @@ fit_semi <- ord_did(
 ## category-specific effects
 fit_semi$estimate_effects
 #> # A tibble: 3 × 4
-#>   category  effect lower_ci upper_ci
-#>      <int>   <dbl>    <dbl>    <dbl>
-#> 1        1 -0.0718 -0.104    -0.0400
-#> 2        2  0.0199 -0.0254    0.0611
-#> 3        3  0.0518  0.00830   0.0796
+#>   category   effect lower_ci upper_ci
+#>      <int>    <dbl>    <dbl>    <dbl>
+#> 1        1 -0.0612        NA       NA
+#> 2        2 -0.00138       NA       NA
+#> 3        3  0.0626        NA       NA
 
 ## bounds on the relative treatment effect
 fit_semi$relative_effects
 #> # A tibble: 2 × 8
 #>   tau_assumption       effect_lb effect_ub status lower_ci upper_ci c_crit
 #>   <chr>                    <dbl>     <dbl> <chr>     <dbl>    <dbl>  <dbl>
-#> 1 none                   -0.105      0.281 ok      -0.154     0.332   1.64
-#> 2 stochastic_dominance    0.0324     0.171 ok      -0.0149    0.220   1.64
+#> 1 none                   -0.0944     0.281 ok           NA       NA     NA
+#> 2 stochastic_dominance    0.0362     0.171 ok           NA       NA     NA
 #> # ℹ 1 more variable: n_boot_valid <int>
 ```
 

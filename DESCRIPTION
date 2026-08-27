@@ -14,10 +14,13 @@ Imports:
     dplyr,
     foreach,
     ggplot2,
+    icenReg,
     lpSolve,
     Matrix,
     purrr,
+    quadprog,
     rlang,
+    splines2,
     tibble,
     VGAM
 Description: A R package for implementing difference-in-differences design for the ordinal outcome.
@@ -26,11 +29,6 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.3.3
 Suggests:
-    BB,
     testthat (>= 2.1.0),
     haven,
-    covr,
-    icenReg,
-    splines2,
-    quadprog,
-    MASS
+    covr

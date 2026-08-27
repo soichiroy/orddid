@@ -216,6 +216,7 @@
     cf_probs_avg = te$cf_probs_avg,
     convergence  = c(fit00 = fit00$convergence,
                      fit01 = fit01$convergence,
-                     fit10 = fit10$convergence)
+                     fit10 = fit10$convergence),
+    profile_fits = list(control_post = fit01, treated_pre = fit10)
   )
 }
