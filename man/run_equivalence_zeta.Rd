@@ -45,8 +45,10 @@ A list with
   \item{estimates}{A tibble with one row per category containing the point
     estimate, bootstrap SE, and lower/upper CI bounds.}
   \item{boot_estimates}{The matrix of bootstrap zeta estimates
-    (\code{n_boot} rows by \code{J} columns).}
+    (one row per valid draw and \code{J} columns).}
   \item{alpha}{The significance level used to construct the CI.}
+  \item{n_boot_valid}{Number of bootstrap draws used for inference.}
+  \item{n_boot_fail}{Number of rejected or failed bootstrap draws.}
 }
 \description{
 Implements the category-specific equivalence test.

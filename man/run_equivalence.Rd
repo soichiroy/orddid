@@ -33,6 +33,12 @@ If left as \code{NULL}, bootstrap is implemented at the individual level.}
 
 \item{v_range}{Numeric vector; the range of quantiles to evaluate the equivalence test.}
 }
+\value{
+A list with the equivalence curve in \code{estimates}, the lower
+  derivative bound \code{M}, its reciprocal \code{inf_factor}, and the
+  numbers of valid and failed bootstrap draws in \code{n_boot_valid} and
+  \code{n_boot_fail}.
+}
 \description{
 Run equivalence test
 }

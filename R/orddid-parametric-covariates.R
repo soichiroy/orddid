@@ -164,6 +164,27 @@
                                             verbose = FALSE,
                                             tau_assumption = "none") {
 
+  outcomes <- list(
+    Y00 = as.integer(Y00),
+    Y01 = as.integer(Y01),
+    Y10 = as.integer(Y10),
+    Y11 = as.integer(Y11)
+  )
+  if (any(vapply(outcomes, anyNA, logical(1))) ||
+      !identical(sort(unique(unlist(outcomes, use.names = FALSE))), 0:2)) {
+    stop("Parametric DID with covariates requires pooled categories 0:2.")
+  }
+  .orddid_require_full_category_support(
+    cells = outcomes,
+    n_categories = 3L,
+    required_cells = c("Y00", "Y01", "Y10"),
+    context = "The parametric-covariate estimation sample"
+  )
+  Y00 <- outcomes$Y00
+  Y01 <- outcomes$Y01
+  Y10 <- outcomes$Y10
+  Y11 <- outcomes$Y11
+
   ## Step 1: ordered probit MLE on (D=0,t=0) cell
   fit00 <- .ordered_probit_mle(Y00, X00)
   beta_00 <- fit00$beta

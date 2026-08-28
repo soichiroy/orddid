@@ -9,6 +9,10 @@
 #' @param n_boot The number of boostrapt iterations for estimating the variance. Default is \code{n_boot = 500}.
 #' @param use_parallel Logical; if TRUE, use parallel computing for bootstrap.
 #' @param v_range Numeric vector; the range of quantiles to evaluate the equivalence test.
+#' @return A list with the equivalence curve in \code{estimates}, the lower
+#'   derivative bound \code{M}, its reciprocal \code{inf_factor}, and the
+#'   numbers of valid and failed bootstrap draws in \code{n_boot_valid} and
+#'   \code{n_boot_fail}.
 #'
 #' @importFrom dplyr sym group_by ungroup slice_sample
 #' @importFrom rlang !! sym
@@ -33,6 +37,13 @@ run_equivalence <- function(
     outcome = outcome,
     post = post,
     treat = treat
+  )
+
+  n_categories <- .orddid_pooled_category_count(df_format)
+  .orddid_require_full_category_support(
+    cells = df_format,
+    n_categories = n_categories,
+    context = "The estimation sample"
   )
 
   # Compute point estimate
@@ -65,6 +76,10 @@ run_equivalence <- function(
     foreach::registerDoSEQ()
   }
 
+  # Capture the current source definition for PSOCK workers. This keeps
+  # devtools::load_all() runs from falling back to an older installed copy.
+  .boot_pre_fn <- .RunBootstrapPre
+
   # Bootstrap iterations
   boot_estimate <- foreach::foreach(
     i = seq_len(n_boot),
@@ -73,22 +88,38 @@ run_equivalence <- function(
     .packages = c("dplyr", "rlang", "orddid")
   ) %dopar%
     {
-      .RunBootstrapPre(
-        df = data,
-        cluster = cluster,
-        outcome = outcome,
-        post = post,
-        treat = treat,
-        v_range = v_range
+      tryCatch(
+        .boot_pre_fn(
+          df = data,
+          cluster = cluster,
+          outcome = outcome,
+          post = post,
+          treat = treat,
+          v_range = v_range,
+          n_categories = n_categories
+        ),
+        error = function(e) rep(NA_real_, length(v_range))
       )
     }
 
+  boot_estimate <- matrix(
+    boot_estimate,
+    nrow = n_boot,
+    ncol = length(v_range)
+  )
+
+  valid_rows <- stats::complete.cases(boot_estimate)
+  if (sum(valid_rows) == 0L) {
+    stop("All bootstrap iterations failed.", call. = FALSE)
+  }
+  boot_clean <- boot_estimate[valid_rows, , drop = FALSE]
+
   # Compute point-wise CI
-  ci_upper_pw <- apply(boot_estimate, 2, function(x) {
-    quantile(x, probs = 0.95)
+  ci_upper_pw <- apply(boot_clean, 2, function(x) {
+    quantile(x, probs = 0.95, na.rm = TRUE)
   })
-  ci_lower_pw <- apply(boot_estimate, 2, function(x) {
-    quantile(x, probs = 0.05)
+  ci_lower_pw <- apply(boot_clean, 2, function(x) {
+    quantile(x, probs = 0.05, na.rm = TRUE)
   })
 
   df_out <- tibble(
@@ -100,7 +131,9 @@ run_equivalence <- function(
   return(list(
     estimates = df_out,
     M = point_estimate$M,
-    inf_factor = 1 / point_estimate$M
+    inf_factor = 1 / point_estimate$M,
+    n_boot_valid = sum(valid_rows),
+    n_boot_fail = sum(!valid_rows)
   ))
 }
 
@@ -146,7 +179,8 @@ run_equivalence <- function(
   outcome,
   post,
   treat,
-  v_range
+  v_range,
+  n_categories = NULL
 ) {
   # Block bootstrap: resample clusters with replacement
   df_boot <- .SampleDf(df = df, cluster = cluster)
@@ -158,6 +192,18 @@ run_equivalence <- function(
     post = post,
     treat = treat
   )
+
+  if (!is.null(n_categories)) {
+    support_counts <- vapply(
+      df_format,
+      function(y) length(unique(y[!is.na(y)])),
+      integer(1)
+    )
+    if (any(support_counts != n_categories)) {
+      stop("The bootstrap sample is missing a required outcome category.",
+           call. = FALSE)
+    }
+  }
 
   boot_estimate <- .GetPointEstimatePre(df = df_format, v_range = v_range)$r
   return(boot_estimate)
@@ -251,8 +297,10 @@ plot_equivalence <- function(equivalence_result) {
 #'   \item{estimates}{A tibble with one row per category containing the point
 #'     estimate, bootstrap SE, and lower/upper CI bounds.}
 #'   \item{boot_estimates}{The matrix of bootstrap zeta estimates
-#'     (\code{n_boot} rows by \code{J} columns).}
+#'     (one row per valid draw and \code{J} columns).}
 #'   \item{alpha}{The significance level used to construct the CI.}
+#'   \item{n_boot_valid}{Number of bootstrap draws used for inference.}
+#'   \item{n_boot_fail}{Number of rejected or failed bootstrap draws.}
 #' @importFrom dplyr sym
 #' @importFrom rlang !! sym
 #' @importFrom foreach %dopar%
@@ -281,10 +329,14 @@ run_equivalence_zeta <- function(
     treat = treat
   )
 
-  # Number of outcome categories J. 
-  n_categories <- length(unique(c(
-    df_format$Y00, df_format$Y01, df_format$Y10, df_format$Y11
-  )))
+  # The legacy no-covariate fits infer category positions within every cell,
+  # so the point estimate and bootstrap draws must retain the pooled support.
+  n_categories <- .orddid_pooled_category_count(df_format)
+  .orddid_require_full_category_support(
+    cells = df_format,
+    n_categories = n_categories,
+    context = "The estimation sample"
+  )
 
   # Point estimate of zeta_j
   point_estimate <- .GetPointEstimateZeta(df = df_format, link = link)
@@ -313,6 +365,10 @@ run_equivalence_zeta <- function(
     foreach::registerDoSEQ()
   }
 
+  # Capture the current source definition for PSOCK workers. This keeps
+  # devtools::load_all() runs from falling back to an older installed copy.
+  .boot_zeta_fn <- .RunBootstrapZeta
+
   boot_estimate <- foreach::foreach(
     i = seq_len(n_boot),
     .combine = "rbind",
@@ -321,7 +377,7 @@ run_equivalence_zeta <- function(
   ) %dopar%
     {
       tryCatch(
-        .RunBootstrapZeta(
+        .boot_zeta_fn(
           df = data,
           cluster = cluster,
           outcome = outcome,
@@ -333,6 +389,12 @@ run_equivalence_zeta <- function(
         error = function(e) rep(NA_real_, length(point_estimate))
       )
     }
+
+  boot_estimate <- matrix(
+    boot_estimate,
+    nrow = n_boot,
+    ncol = length(point_estimate)
+  )
 
   # Drop failed bootstrap rows
   valid_rows <- stats::complete.cases(boot_estimate)
@@ -408,9 +470,13 @@ run_equivalence_zeta <- function(
     treat = treat
   )
   if (!is.null(n_categories)) {
-    if (any(vapply(df_format, function(y) length(unique(y)),
-                   FUN.VALUE = integer(1)) < n_categories)) {
-      stop("bootstrap sample is missing one or more outcome categories",
+    support_counts <- vapply(
+      df_format,
+      function(y) length(unique(y[!is.na(y)])),
+      integer(1)
+    )
+    if (any(support_counts != n_categories)) {
+      stop("The bootstrap sample is missing a required outcome category.",
            call. = FALSE)
     }
   }

@@ -39,17 +39,25 @@
   X01 <- matrices[[2L]]
   X10 <- matrices[[3L]]
   X11 <- matrices[[4L]]
-  outcomes <- lapply(list(Y00, Y01, Y10, Y11), as.integer)
+  outcomes <- lapply(
+    list(Y00 = Y00, Y01 = Y01, Y10 = Y10, Y11 = Y11),
+    as.integer
+  )
   Y00 <- outcomes[[1L]]
   Y01 <- outcomes[[2L]]
   Y10 <- outcomes[[3L]]
   Y11 <- outcomes[[4L]]
 
   if (any(vapply(outcomes, anyNA, logical(1))) ||
-      !identical(sort(unique(c(Y00, Y01, Y10, Y11))), 0:2) ||
-      !identical(sort(unique(Y00)), 0:2)) {
-    stop("Semiparametric DID requires categories 0:2, including all three in Y00.")
+      !identical(sort(unique(c(Y00, Y01, Y10, Y11))), 0:2)) {
+    stop("Semiparametric DID requires pooled categories 0:2.")
   }
+  .orddid_require_full_category_support(
+    cells = outcomes,
+    n_categories = 3L,
+    required_cells = c("Y00", "Y01", "Y10"),
+    context = "The semiparametric estimation sample"
+  )
   p <- ncol(X00)
   if (p < 1L || any(vapply(matrices, ncol, integer(1)) != p) ||
       any(vapply(seq_along(matrices), function(i) {

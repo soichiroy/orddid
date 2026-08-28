@@ -54,6 +54,8 @@ An S3 object of class \code{"orddid_staggered"} with:
 \item{group_time_tau}{Data frame of relative treatment effect bounds by (g,t).}
 \item{aggregate_effects}{Weighted average effects with CIs.}
 \item{inputs}{Function arguments for reproducibility.}
+\item{n_boot_valid}{Number of bootstrap draws used for inference.}
+\item{n_boot_fail}{Number of rejected or failed bootstrap draws.}
 }
 \description{
 Estimates group-time treatment effects for ordinal outcomes

@@ -1,6 +1,7 @@
 
 .RunBootstrap <- function(df, cluster, outcome, post, treat,
-                          tau_assumption = "none") {
+                          tau_assumption = "none",
+                          n_categories = NULL) {
   # Bootstrap
   df_boot <- .SampleDf(df = df, cluster = cluster)
 
@@ -11,6 +12,18 @@
     post = post,
     treat = treat
   )
+
+  if (!is.null(n_categories)) {
+    support_counts <- vapply(
+      df_format,
+      function(y) length(unique(y[!is.na(y)])),
+      integer(1)
+    )
+    if (any(support_counts != n_categories)) {
+      stop("The bootstrap sample is missing a required outcome category.",
+           call. = FALSE)
+    }
+  }
 
   # Estimation
   estimate <- .GetPointEstimate(

@@ -99,7 +99,14 @@
     score_xi <- rep(0, p)
 
     for (j in seq_len(J)) {
-      if (kappa_finite[j]) {
+      # Adjacent categories share a cutoff. Reuse the preceding upper-boundary
+      # evaluation as the current lower boundary instead of evaluating the
+      # regularized CDF (and its density) twice at the same vector.
+      if (j > 1L) {
+        u_lower <- u_upper
+        F_lower <- F_upper
+        f_lower <- f_upper
+      } else if (kappa_finite[j]) {
         u_lower <- (kappa[j] - mu) / sigma
         F_lower <- Ftilde(u_lower)
         f_lower <- if (has_gradient) ftilde(u_lower) else NULL

@@ -43,6 +43,8 @@
 #' \item{bootstrap_effects}{Matrix of category-effect bootstrap draws. Failed
 #'   draws are retained as rows of \code{NA}; present for covariate methods.}
 #' \item{point_diagnostics}{Convergence diagnostics for covariate methods.}
+#' \item{n_boot_valid}{Number of bootstrap draws used for inference.}
+#' \item{n_boot_fail}{Number of rejected or failed bootstrap draws.}
 #' @examples
 #'\donttest{
 #' ## load packages
@@ -65,17 +67,15 @@
 #'     treated = ifelse(!is.na(treated_group), TRUE, FALSE)
 #'   )
 #'
-#' dat_use %>%
-#'   group_by(pid3) %>%
-#'   group_map(
-#'     ~ ord_did(
-#'       data = .x,
-#'       outcome = "guns",
-#'       post = "post",
-#'       treat = "treated",
-#'       cluster = "caseid"
-#'     )
-#'   )
+#' fit <- ord_did(
+#'   data = dat_use,
+#'   outcome = "guns",
+#'   post = "post",
+#'   treat = "treated",
+#'   cluster = "caseid",
+#'   n_boot = 100,
+#'   tau_assumption = "none"
+#' )
 #'
 #' ## view summary of the output
 #' ## non-cumulative effects
@@ -133,6 +133,16 @@ ord_did <- function(
     treat = treat
   )
 
+  # This estimator infers category positions separately within each DID cell.
+  # Require the original support for the point estimate and every bootstrap
+  # draw so a missing category cannot be silently relabeled.
+  n_categories <- .orddid_pooled_category_count(df_format)
+  .orddid_require_full_category_support(
+    cells = df_format,
+    n_categories = n_categories,
+    context = "The estimation sample"
+  )
+
   # Compute point estimate
   point_estimate <- .GetPointEstimate(
     df = df_format,
@@ -154,6 +164,10 @@ ord_did <- function(
     foreach::registerDoSEQ()
   }
 
+  # Capture the current source definition for PSOCK workers. This keeps
+  # devtools::load_all() runs from falling back to an older installed copy.
+  .boot_parametric_fn <- .RunBootstrap
+
   # Compute bootstrap estimates
   boot_estimate <- foreach::foreach(
     i = seq_len(n_boot),
@@ -163,13 +177,14 @@ ord_did <- function(
   ) %dopar%
     {
       est <- tryCatch(
-        .RunBootstrap(
+        .boot_parametric_fn(
           df = data,
           cluster = cluster,
           outcome = outcome,
           post = post,
           treat = treat,
-          tau_assumption = tau_assumption
+          tau_assumption = tau_assumption,
+          n_categories = n_categories
         ),
         error = function(e) NULL
       )
@@ -214,6 +229,7 @@ ord_did <- function(
     ),
     estimate_effects = diff_res,
     relative_effects = relative_res,
+    n_boot_valid = ci_diff$n_valid,
     n_boot_fail = ci_diff$n_fail
   ))
 }
@@ -310,9 +326,6 @@ ord_did <- function(
   i10 <- cell_id == 3L
   i11 <- cell_id == 4L
 
-  if (!identical(sort(unique(as.integer(y_vec[i00]))), 0:2)) {
-    stop("The control-pre cell (Y00) must contain all three outcome categories 0:2.")
-  }
   if (method == "semiparametric" &&
       length(unique(X_mat[i00, fixed_index])) < 2L) {
     stop("The covariate selected by fixed_index must vary in the control-pre cell.")
@@ -323,6 +336,16 @@ ord_did <- function(
     Y01 = y_vec[i01], X01 = X_mat[i01, , drop = FALSE],
     Y10 = y_vec[i10], X10 = X_mat[i10, , drop = FALSE],
     Y11 = y_vec[i11], X11 = X_mat[i11, , drop = FALSE]
+  )
+
+  # Both covariate estimators identify the cutoffs in Y00 and fit latent
+  # location/scale parameters in Y01 and Y10. A missing category in any fitted
+  # cell can create a boundary profile fit even when the optimizer reports
+  # convergence. Y11 is tabulated against fixed labels and may contain zeros.
+  .orddid_require_full_category_support(
+    cells = list(Y00 = cells$Y00, Y01 = cells$Y01, Y10 = cells$Y10),
+    n_categories = 3L,
+    context = "The estimation sample"
   )
 
   cluster_vec <- data_use[[cluster]]
@@ -474,8 +497,24 @@ ord_did <- function(
       b10 <- cell_b == 3L
       b11 <- cell_b == 4L
 
-      if (min(sum(b00), sum(b01), sum(b10), sum(b11)) < 10L ||
-          !identical(sort(unique(as.integer(y_b[b00]))), 0:2)) {
+      if (min(sum(b00), sum(b01), sum(b10), sum(b11)) < 10L) {
+        return(NULL)
+      }
+
+      # Y00, Y01, and Y10 all enter latent-distribution fits. Missing support
+      # can create boundary estimates even with a zero optimizer convergence
+      # code. Y11 uses explicit zero-count categories and is safe to retain.
+      model_cell_counts <- vapply(
+        list(y_b[b00], y_b[b01], y_b[b10]),
+        function(y) length(unique(y)),
+        integer(1)
+      )
+      if (any(model_cell_counts != 3L)) {
+        return(NULL)
+      }
+
+      if (method == "semiparametric" &&
+          length(unique(X_b[b00, fixed_index])) < 2L) {
         return(NULL)
       }
 
@@ -565,6 +604,7 @@ ord_did <- function(
     ),
     estimate_effects = diff_res,
     relative_effects = relative_res,
+    n_boot_valid = sum(valid),
     n_boot_fail = n_fail,
     bootstrap_effects = boot_zeta,
     point_diagnostics = point_diagnostics

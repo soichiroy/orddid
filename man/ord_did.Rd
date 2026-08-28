@@ -76,6 +76,8 @@ A list with components:
 \item{bootstrap_effects}{Matrix of category-effect bootstrap draws. Failed
   draws are retained as rows of \code{NA}; present for covariate methods.}
 \item{point_diagnostics}{Convergence diagnostics for covariate methods.}
+\item{n_boot_valid}{Number of bootstrap draws used for inference.}
+\item{n_boot_fail}{Number of rejected or failed bootstrap draws.}
 }
 \description{
 \code{ord_did()} implements the difference-in-differences for the ordinal outcome.
@@ -102,17 +104,15 @@ dat_use <- gun_twowave \%>\%
     treated = ifelse(!is.na(treated_group), TRUE, FALSE)
   )
 
-dat_use \%>\%
-  group_by(pid3) \%>\%
-  group_map(
-    ~ ord_did(
-      data = .x,
-      outcome = "guns",
-      post = "post",
-      treat = "treated",
-      cluster = "caseid"
-    )
-  )
+fit <- ord_did(
+  data = dat_use,
+  outcome = "guns",
+  post = "post",
+  treat = "treated",
+  cluster = "caseid",
+  n_boot = 100,
+  tau_assumption = "none"
+)
 
 ## view summary of the output
 ## non-cumulative effects

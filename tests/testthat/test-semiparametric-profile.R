@@ -111,3 +111,52 @@ test_that("analytic and finite-difference profiles agree on the selected fit", {
   expect_equal(fit_gradient$beta, fit_numeric$beta, tolerance = 5e-3)
   expect_equal(fit_gradient$xi, fit_numeric$xi, tolerance = 5e-3)
 })
+
+test_that("profile likelihood reuses CDF evaluations at shared cutoffs", {
+  set.seed(814)
+  n <- 100L
+  X <- cbind(x1 = stats::rnorm(n), x2 = stats::rnorm(n))
+  Y <- .draw_three_category_outcome(
+    X,
+    beta = c(-0.7, 0.25),
+    alpha = 1.05,
+    xi = c(0.08, -0.04)
+  )
+
+  cdf_inputs <- list()
+  counted_pnorm <- function(u) {
+    cdf_inputs[[length(cdf_inputs) + 1L]] <<- u
+    stats::pnorm(u)
+  }
+  density_inputs <- list()
+  counted_dnorm <- function(u) {
+    density_inputs[[length(density_inputs) + 1L]] <<- u
+    stats::dnorm(u)
+  }
+  fit <- .step2_profile_likelihood(
+    Y, X, counted_pnorm, c(-Inf, 0, 1.05, Inf),
+    beta_init = c(-0.65, 0.2),
+    xi_init = c(0, 0),
+    ftilde = counted_dnorm,
+    optimizer = "BFGS",
+    multistart = FALSE
+  )
+
+  consecutive_duplicates <- vapply(
+    seq.int(2L, length(cdf_inputs)),
+    function(i) identical(cdf_inputs[[i - 1L]], cdf_inputs[[i]]),
+    logical(1)
+  )
+  expect_gt(length(cdf_inputs), 0L)
+  expect_false(any(consecutive_duplicates))
+  expect_equal(density_inputs, cdf_inputs)
+
+  # Frozen pre-cache result: reusing a shared boundary must not alter the fit.
+  expect_equal(
+    unname(c(fit$beta, fit$xi)),
+    c(-0.601918677783507, 0.172026061937291,
+      0.246298823487888, -0.052926651473940),
+    tolerance = 1e-7
+  )
+  expect_equal(fit$loglik, -89.4314561977679, tolerance = 1e-8)
+})

@@ -33,6 +33,8 @@
 #' \item{group_time_tau}{Data frame of relative treatment effect bounds by (g,t).}
 #' \item{aggregate_effects}{Weighted average effects with CIs.}
 #' \item{inputs}{Function arguments for reproducibility.}
+#' \item{n_boot_valid}{Number of bootstrap draws used for inference.}
+#' \item{n_boot_fail}{Number of rejected or failed bootstrap draws.}
 #'
 #' @export
 ord_did_staggered <- function(
@@ -52,6 +54,10 @@ ord_did_staggered <- function(
 
   if (is.null(cluster)) cluster <- unit
 
+  n_categories <- .orddid_pooled_category_count(
+    list(outcome = data[[outcome]])
+  )
+
   ## Point estimate
   point <- .staggered_estimate_all(
     data = data,
@@ -60,7 +66,8 @@ ord_did_staggered <- function(
     time = time,
     group = group,
     base_period = base_period,
-    tau_assumption = tau_assumption
+    tau_assumption = tau_assumption,
+    n_categories = n_categories
   )
 
   gt_res <- point$gt_results
@@ -71,6 +78,9 @@ ord_did_staggered <- function(
   }
 
   J <- length(gt_res[[1]]$zeta)
+  gt_keys <- vapply(gt_res, function(r) {
+    paste(r$group, r$time, sep = "::")
+  }, character(1))
   tau_levels <- gt_res[[1]]$tau$tau_assumption
   n_tau <- length(tau_levels)
 
@@ -126,12 +136,20 @@ ord_did_staggered <- function(
         time = time,
         group = group,
         base_period = base_period,
-        tau_assumption = tau_assumption
+        tau_assumption = tau_assumption,
+        n_categories = n_categories
       ),
       error = function(e) NULL
     )
 
-    if (is.null(res_b) || length(res_b$gt_results) != n_gt) {
+    boot_keys <- if (is.null(res_b)) {
+      character()
+    } else {
+      vapply(res_b$gt_results, function(r) {
+        paste(r$group, r$time, sep = "::")
+      }, character(1))
+    }
+    if (is.null(res_b) || !identical(boot_keys, gt_keys)) {
       n_fail <- n_fail + 1
       next
     }
@@ -269,6 +287,7 @@ ord_did_staggered <- function(
       weights = weights,
       tau_assumption = tau_assumption
     ),
+    n_boot_valid = sum(valid),
     n_boot_fail = n_fail
   )
 

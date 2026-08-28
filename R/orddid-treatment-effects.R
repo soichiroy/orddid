@@ -240,6 +240,107 @@
   c(lower = lp_lower$objval, upper = lp_upper$objval)
 }
 
+#' Count pooled outcome categories across DID cells
+#'
+#' @param cells Named list of outcome vectors.
+#' @return Integer number of observed pooled outcome categories.
+#' @keywords internal
+#' @noRd
+.orddid_pooled_category_count <- function(cells) {
+  if (!is.list(cells) || length(cells) == 0L) {
+    stop("cells must be a non-empty list of outcome vectors.", call. = FALSE)
+  }
+
+  pooled <- unlist(cells, use.names = FALSE)
+  pooled <- pooled[!is.na(pooled)]
+  n_categories <- length(unique(pooled))
+  if (n_categories < 2L) {
+    stop("Ordinal DID requires at least two pooled outcome categories.",
+         call. = FALSE)
+  }
+  n_categories
+}
+
+
+#' Count observed outcome categories in required DID cells
+#'
+#' @param cells Named list of outcome vectors.
+#' @param required_cells Character vector naming cells to inspect.
+#' @return Named integer vector of observed category counts.
+#' @keywords internal
+#' @noRd
+.orddid_category_support_counts <- function(
+    cells, required_cells = names(cells)) {
+  if (!is.list(cells) || is.null(names(cells))) {
+    stop("cells must be a named list of outcome vectors.", call. = FALSE)
+  }
+  if (!is.character(required_cells) || length(required_cells) == 0L ||
+      anyNA(required_cells) || any(!required_cells %in% names(cells))) {
+    stop("required_cells must identify one or more supplied cells.",
+         call. = FALSE)
+  }
+
+  vapply(cells[required_cells], function(y) {
+    length(unique(y[!is.na(y)]))
+  }, integer(1))
+}
+
+
+#' Check fixed ordinal support in required DID cells
+#'
+#' Bootstrap resampling can remove a rare outcome category. Estimators that
+#' infer cutoffs from the observed categories must reject such draws rather
+#' than silently relabel the remaining categories.
+#'
+#' @param cells Named list of outcome vectors.
+#' @param n_categories Number of categories in the original estimation sample.
+#' @param required_cells Character vector naming cells that must retain support.
+#' @return Logical scalar.
+#' @keywords internal
+#' @noRd
+.orddid_has_full_category_support <- function(
+    cells, n_categories, required_cells = names(cells)) {
+  counts <- .orddid_category_support_counts(cells, required_cells)
+  all(counts == as.integer(n_categories))
+}
+
+
+#' Require fixed ordinal support in specified DID cells
+#'
+#' @inheritParams .orddid_has_full_category_support
+#' @param context Short description used in the error message.
+#' @return The category counts, invisibly.
+#' @keywords internal
+#' @noRd
+.orddid_require_full_category_support <- function(
+    cells, n_categories, required_cells = names(cells),
+    context = "The sample") {
+  if (length(n_categories) != 1L || !is.numeric(n_categories) ||
+      is.na(n_categories) || !is.finite(n_categories) ||
+      n_categories < 2L || n_categories != floor(n_categories)) {
+    stop("n_categories must be one integer greater than or equal to two.",
+         call. = FALSE)
+  }
+
+  counts <- .orddid_category_support_counts(cells, required_cells)
+  deficient <- counts != as.integer(n_categories)
+  if (any(deficient)) {
+    detail <- paste0(
+      names(counts)[deficient], " (", counts[deficient], "/",
+      as.integer(n_categories), ")",
+      collapse = ", "
+    )
+    stop(
+      context, " must retain all ", as.integer(n_categories),
+      " pooled outcome categories in the required DID cells; deficient ",
+      "cells: ", detail, ".",
+      call. = FALSE
+    )
+  }
+
+  invisible(counts)
+}
+
 
 #' Extract outcome vectors by post/treat cells
 #'

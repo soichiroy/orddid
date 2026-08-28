@@ -17,22 +17,49 @@
 #' @keywords internal
 .staggered_estimate_all <- function(data, outcome, unit, time, group,
                                     base_period = "previous",
-                                    tau_assumption = "none") {
+                                    tau_assumption = "none",
+                                    n_categories = NULL) {
   tau_assumption <- .orddid_match_tau_assumptions(tau_assumption)
 
   Y     <- data[[outcome]]
   t_col <- data[[time]]
   g_col <- data[[group]]
 
+  if (is.null(n_categories)) {
+    n_categories <- .orddid_pooled_category_count(list(outcome = Y))
+  }
+
   ## Identify never-treated and adoption groups
   g_col[is.na(g_col)] <- Inf
   periods        <- sort(unique(t_col))
   adopt_groups   <- sort(unique(g_col[is.finite(g_col)]))
   t0             <- min(periods)
+  category_levels <- sort(unique(Y[!is.na(Y)]))
+
+  base_for_group <- function(gg) {
+    if (is.character(base_period) && base_period == "previous") {
+      candidates <- periods[periods < gg]
+      if (length(candidates) == 0L) return(NA_real_)
+      max(candidates)
+    } else {
+      as.numeric(base_period)
+    }
+  }
+  group_bases <- vapply(adopt_groups, base_for_group, numeric(1))
+  required_never_periods <- sort(unique(c(
+    t0,
+    group_bases[is.finite(group_bases)],
+    unlist(lapply(adopt_groups, function(gg) periods[periods >= gg]))
+  )))
 
   ## ---- Step 1: baseline from never-treated at t=0 ----
   idx_inf0   <- !is.finite(g_col) & (t_col == t0)
   Y_inf0     <- Y[idx_inf0]
+  .orddid_require_full_category_support(
+    cells = list(never_treated_baseline = Y_inf0),
+    n_categories = n_categories,
+    context = "The staggered never-treated baseline cell"
+  )
   fit_inf0   <- .FitOrderedProbit(Y = Y_inf0, cutoff_val = NULL)
   kappa      <- fit_inf0$cutoff
 
@@ -41,10 +68,15 @@
   params <- list()
 
   ## Never-treated, all periods
-  for (tt in periods) {
+  for (tt in required_never_periods) {
     idx <- !is.finite(g_col) & (t_col == tt)
     Y_gt <- Y[idx]
     if (length(Y_gt) < 5) next
+    .orddid_require_full_category_support(
+      cells = list(never_treated = Y_gt),
+      n_categories = n_categories,
+      context = paste0("The staggered never-treated cell at time ", tt)
+    )
     if (tt == t0) {
       params[[paste0("Inf_", tt)]] <- list(
         mu = fit_inf0$mu, sd = fit_inf0$sd, group = Inf, time = tt
@@ -57,17 +89,25 @@
     }
   }
 
-  ## Each adoption group, all periods
-  for (gg in adopt_groups) {
-    for (tt in periods) {
-      idx <- (g_col == gg) & (t_col == tt)
-      Y_gt <- Y[idx]
-      if (length(Y_gt) < 5) next
-      fit_gt <- .FitOrderedProbit(Y = Y_gt, cutoff_val = kappa)
-      params[[paste0(gg, "_", tt)]] <- list(
-        mu = fit_gt$mu, sd = fit_gt$sd, group = gg, time = tt
-      )
-    }
+  ## Each adoption group only needs its pre-treatment base-period fit. The
+  ## treated post-period distribution is tabulated directly below against the
+  ## fixed global category levels and may validly contain zero-count categories.
+  for (i in seq_along(adopt_groups)) {
+    gg <- adopt_groups[i]
+    s <- group_bases[i]
+    if (!is.finite(s)) next
+    idx <- (g_col == gg) & (t_col == s)
+    Y_gs <- Y[idx]
+    if (length(Y_gs) < 5) next
+    .orddid_require_full_category_support(
+      cells = list(adoption_group_base = Y_gs),
+      n_categories = n_categories,
+      context = paste0("The staggered group ", gg, " base-period cell at time ", s)
+    )
+    fit_gs <- .FitOrderedProbit(Y = Y_gs, cutoff_val = kappa)
+    params[[paste0(gg, "_", s)]] <- list(
+      mu = fit_gs$mu, sd = fit_gs$sd, group = gg, time = s
+    )
   }
 
   ## ---- Step 3: DID for post-treatment (g,t) pairs ----
@@ -78,11 +118,8 @@
 
     for (tt in post_periods) {
       ## Choose base period s
-      if (is.character(base_period) && base_period == "previous") {
-        s <- max(periods[periods < gg])
-      } else {
-        s <- as.integer(base_period)
-      }
+      s <- base_for_group(gg)
+      if (!is.finite(s)) next
 
       ## Retrieve parameters
       key_gs     <- paste0(gg, "_", s)
@@ -112,9 +149,8 @@
       J       <- length(kappa) + 1
 
       prob_obs <- numeric(J)
-      cats     <- sort(unique(Y))
       for (j in seq_len(J)) {
-        prob_obs[j] <- mean(Y_obs == cats[j])
+        prob_obs[j] <- mean(Y_obs == category_levels[j])
       }
 
       ## Treatment effects

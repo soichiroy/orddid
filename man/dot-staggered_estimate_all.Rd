@@ -11,7 +11,8 @@
   time,
   group,
   base_period = "previous",
-  tau_assumption = "none"
+  tau_assumption = "none",
+  n_categories = NULL
 )
 }
 \arguments{
